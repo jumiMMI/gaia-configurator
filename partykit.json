@@ -1,0 +1,10 @@
+{
+  "$schema": "https://www.partykit.io/schema.json",
+  "name": "gaia-configurator",
+  "main": "party/server.ts",
+  "compatibilityDate": "2025-11-14",
+  "serve": {
+    "path": "public",
+    "build": "src/party/client.ts"
+  }
+}
