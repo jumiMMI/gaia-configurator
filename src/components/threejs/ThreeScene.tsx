@@ -25,7 +25,6 @@ export default function ThreeScene() {
 
             animatePlanet(planet);
 
-
             renderer.render(scene, camera);
             gl.endFrameEXP();
         };
