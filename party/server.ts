@@ -115,19 +115,19 @@ export default class PartyServer {
         return;
       }
     } catch {
-      // Ce n'est pas du JSON, traiter comme un message texte normal
+      
     }
 
-    // Message texte classique (chat)
-    const senderUser = this.users.find(u => u.id === sender.id);
-    const senderName = senderUser?.name || sender.id;
+    // // Message texte classique (chat)
+    // const senderUser = this.users.find(u => u.id === sender.id);
+    // const senderName = senderUser?.name || sender.id;
     
-    const fullMessage = `${senderName} dit: ${message}`;
-    this.history.push(fullMessage);
+    // const fullMessage = `${senderName} dit: ${message}`;
+    // this.history.push(fullMessage);
 
-    this.clients.forEach((c) => {
-      c.send(fullMessage);
-    });
+    // this.clients.forEach((c) => {
+    //   c.send(fullMessage);
+    // });
   }
 
   onDisconnect(connection: Connection<unknown>, roomName: string) {

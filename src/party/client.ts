@@ -87,7 +87,7 @@ export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): Us
           return;
         }
       } catch {
-        // Message non-JSON (ex: message de chat)
+        // Message non-JSON
       }
     };
 

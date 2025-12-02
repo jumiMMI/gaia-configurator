@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BiomeData } from '../../../party/messages';
 import { getDefaultHexasphereData } from '../../../utils/hexasphereUtils';
 
-// Couleur par défaut des tuiles (vert)
+
 const DEFAULT_TILE_COLOR = 0xffffff;
 
 export default function createPlanet(): THREE.Group {
@@ -18,7 +18,7 @@ export default function createPlanet(): THREE.Group {
             side: THREE.DoubleSide,
         });
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.userData.tileIndex = i; // Stocker l'index pour identification
+        mesh.userData.tileIndex = i;
         group.add(mesh);
     }
     
