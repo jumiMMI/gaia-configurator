@@ -1,12 +1,43 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useEffect } from "react";
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming
+} from "react-native-reanimated";
 import { Biome, allBiomes } from "../../models/Biome";
 
 interface BiomeSelectorProps {
     selectedBiome?: Biome;
     onBiomeSelect?: (biome: Biome) => void;
+    showDetails?: boolean;
+    onCloseDetails?: () => void;
 }
 
-export default function BiomeSelector({ selectedBiome, onBiomeSelect }: BiomeSelectorProps) {
+export default function BiomeSelector({ 
+    selectedBiome, 
+    onBiomeSelect,
+    showDetails = false,
+    onCloseDetails,
+}: BiomeSelectorProps) {
+    const opacity = useSharedValue(0);
+
+    useEffect(() => {
+        if (showDetails && selectedBiome) {
+            opacity.value = withTiming(1, { duration: 200 });
+        } else {
+            opacity.value = withTiming(0, { duration: 150 });
+        }
+    }, [showDetails, selectedBiome]);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        opacity: opacity.value,
+    }));
+
+    const overlayStyle = useAnimatedStyle(() => ({
+        opacity: opacity.value * 0.5,
+    }));
+
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Sélectionner un Biome</Text>
@@ -32,27 +63,43 @@ export default function BiomeSelector({ selectedBiome, onBiomeSelect }: BiomeSel
                 ))}
             </View>
 
-            {selectedBiome && (
-                <View style={styles.detailsContainer}>
-                    <Text style={styles.detailsTitle}>Détails du Biome</Text>
-                    <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Température:</Text>
-                        <Text style={styles.detailValue}>{selectedBiome.temperature}°C</Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Humidité:</Text>
-                        <Text style={styles.detailValue}>{selectedBiome.humidite}%</Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>CO₂:</Text>
-                        <Text style={styles.detailValue}>{selectedBiome.CO2} ppm</Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Lumière:</Text>
-                        <Text style={styles.detailValue}>{selectedBiome.lumiere}%</Text>
-                    </View>
+            {/* Modal avec overlay pour fermer les détails */}
+            <Modal
+                visible={showDetails && !!selectedBiome}
+                transparent
+                animationType="none"
+                onRequestClose={onCloseDetails}
+            >
+                <Pressable style={styles.modalOverlay} onPress={onCloseDetails}>
+                    <Animated.View style={[styles.overlayBackground, overlayStyle]} />
+                </Pressable>
+                
+                <View style={styles.modalContent}>
+                    <Animated.View style={[styles.detailsContainer, animatedStyle]}>
+                        <View style={[styles.detailsHeader, { backgroundColor: selectedBiome?.couleur }]}>
+                            <Text style={styles.detailsTitle}>{selectedBiome?.nom}</Text>
+                        </View>
+                        <View style={styles.detailsBody}>
+                            <View style={styles.detailRow}>
+                                <Text style={styles.detailLabel}>Température:</Text>
+                                <Text style={styles.detailValue}>{selectedBiome?.temperature}°C</Text>
+                            </View>
+                            <View style={styles.detailRow}>
+                                <Text style={styles.detailLabel}>Humidité:</Text>
+                                <Text style={styles.detailValue}>{selectedBiome?.humidite}%</Text>
+                            </View>
+                            <View style={styles.detailRow}>
+                                <Text style={styles.detailLabel}>CO₂:</Text>
+                                <Text style={styles.detailValue}>{selectedBiome?.CO2} ppm</Text>
+                            </View>
+                            <View style={styles.detailRow}>
+                                <Text style={styles.detailLabel}>Lumière:</Text>
+                                <Text style={styles.detailValue}>{selectedBiome?.lumiere}%</Text>
+                            </View>
+                        </View>
+                    </Animated.View>
                 </View>
-            )}
+            </Modal>
         </View>
     );
 }
@@ -73,7 +120,6 @@ const styles = StyleSheet.create({
     },
     biomeGrid: {
         flexDirection: "row",
-        // flexWrap: "wrap",
         gap: 10,
         justifyContent: "space-between",
         marginBottom: 20,
@@ -106,35 +152,64 @@ const styles = StyleSheet.create({
         color: "#333",
         textTransform: "capitalize",
     },
+    modalOverlay: {
+        ...StyleSheet.absoluteFillObject,
+    },
+    overlayBackground: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "#000",
+    },
+    modalContent: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        pointerEvents: "box-none",
+    },
     detailsContainer: {
-        position: "absolute",
-        marginTop: 20,
-        padding: 15,
-        backgroundColor: "#f9f9f9",
-        borderRadius: 8,
-        borderLeftWidth: 4,
-        borderLeftColor: "#007AFF",
+        width: "80%",
+        maxWidth: 300,
+        backgroundColor: "#fff",
+        borderRadius: 16,
+        overflow: "hidden",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    detailsHeader: {
+        padding: 20,
+        alignItems: "center",
     },
     detailsTitle: {
-        fontSize: 16,
+        fontSize: 22,
         fontWeight: "bold",
-        marginBottom: 10,
-        color: "#333",
+        color: "#fff",
+        textTransform: "capitalize",
+        textShadowColor: "rgba(0,0,0,0.3)",
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 2,
+    },
+    detailsBody: {
+        padding: 20,
     },
     detailRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        marginBottom: 8,
+        marginBottom: 12,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: "#eee",
     },
     detailLabel: {
-        fontSize: 14,
+        fontSize: 15,
         color: "#666",
         fontWeight: "500",
     },
     detailValue: {
-        fontSize: 14,
+        fontSize: 15,
         color: "#333",
-        fontWeight: "600",
+        fontWeight: "700",
     },
 });
 

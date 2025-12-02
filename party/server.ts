@@ -1,4 +1,5 @@
 import { Connection } from "partykit/server";
+import type { BiomeData, SetBiomeMessage, SyncStateMessage } from "../src/party/messages";
 
 interface User {
   id: string;
@@ -12,14 +13,17 @@ function generateName() {
 }
 
 export default class PartyServer {
-  // État de cette instance (cette room spécifique)
+
   private clients: Connection<unknown>[] = [];
   private history: string[] = [];
   private hostId?: string;
   private users: User[] = [];
+  
+  // État de la planète : biomes par index de tuile
+  private tileBiomes: Record<number, BiomeData> = {};
 
   onConnect(connection: Connection<unknown>, roomName: string) {
-    // Si c'est le premier client, il devient le host
+   
     if (this.clients.length === 0) {
       this.hostId = connection.id;
       console.log(`Room créée : ${roomName}, host = ${connection.id}`);
@@ -65,17 +69,62 @@ export default class PartyServer {
 
     // Envoyer l'historique
     this.history.forEach((msg) => connection.send(msg));
+
+    // Envoyer l'état actuel de la planète au nouveau client
+    const syncMessage: SyncStateMessage = {
+      type: 'SYNC_STATE',
+      tileBiomes: this.tileBiomes,
+    };
+    connection.send(JSON.stringify(syncMessage));
   }
 
   onMessage(message: string, sender: Connection<unknown>, roomName: string) {
-    // Trouver le nom de l'utilisateur correspondant à sender.id
+    // Essayer de parser le message comme JSON
+    try {
+      const parsed = JSON.parse(message);
+      
+      // Gérer le message SET_BIOME
+      if (parsed.type === 'SET_BIOME') {
+        const setBiomeMsg = parsed as SetBiomeMessage;
+        
+        // Sauvegarder le biome pour cette tuile
+        this.tileBiomes[setBiomeMsg.tileIndex] = setBiomeMsg.biome;
+        
+        console.log(`Biome mis à jour : tuile ${setBiomeMsg.tileIndex} → ${setBiomeMsg.biome.nom}`);
+        
+        // Broadcaster à tous les autres clients
+        this.clients.forEach((c) => {
+          if (c !== sender) {
+            c.send(JSON.stringify(setBiomeMsg));
+          }
+        });
+        return;
+      }
+
+      // Gérer le message RESET_PLANET
+      if (parsed.type === 'RESET_PLANET') {
+        // Réinitialiser tous les biomes
+        this.tileBiomes = {};
+        
+        console.log(`Planète réinitialisée !`);
+        
+        // Broadcaster à tous les clients (y compris l'expéditeur pour confirmation)
+        this.clients.forEach((c) => {
+          c.send(JSON.stringify({ type: 'RESET_PLANET' }));
+        });
+        return;
+      }
+    } catch {
+      // Ce n'est pas du JSON, traiter comme un message texte normal
+    }
+
+    // Message texte classique (chat)
     const senderUser = this.users.find(u => u.id === sender.id);
-    const senderName = senderUser?.name || sender.id; // Utiliser le nom ou l'ID en fallback
+    const senderName = senderUser?.name || sender.id;
     
     const fullMessage = `${senderName} dit: ${message}`;
     this.history.push(fullMessage);
 
-    // Envoyer le message à tous les clients (y compris l'expéditeur)
     this.clients.forEach((c) => {
       c.send(fullMessage);
     });

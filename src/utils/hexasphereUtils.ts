@@ -1,13 +1,13 @@
 import Hexasphere from 'hexasphere.js';
 
 /**
- * Paramètres par défaut pour la génération de l'hexasphere
- * Ces valeurs doivent correspondre à celles utilisées dans Planet.tsx
+ * 
+ * 
  */
 export const DEFAULT_HEXASPHERE_CONFIG = {
-    radius: 2,
+    radius: 2.5,
     subDivisions: 3,
-    tileWidth: 0.95,
+    tileWidth: 0.90,
 } as const;
 
 /**
@@ -109,7 +109,7 @@ export function calculerDimensionsGrille(
         };
     }
 
-    // Méthode 1 : Calcul simple basé sur la racine carrée
+
     const sqrt = Math.sqrt(nombreTuiles);
     let largeur = Math.ceil(sqrt);
     let hauteur = Math.ceil(nombreTuiles / largeur);

@@ -16,8 +16,6 @@ export default function Cinematic() {
   ];
 
   useEffect(() => {
-    // Auto-avancement des scènes (optionnel)
-    // Vous pouvez retirer cela si vous voulez un contrôle manuel
     if (currentScene < scenes.length - 1) {
       const timer = setTimeout(() => {
         setCurrentScene(currentScene + 1);
