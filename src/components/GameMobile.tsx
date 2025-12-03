@@ -75,8 +75,8 @@ export default function GameMobile({ roomName }: GameMobileProps) {
 
       {/* Bouton de reset quand toutes les tuiles sont utilisées */}
       {allTilesUsed && (
-        <TouchableOpacity style={styles.resetButton} onPress={resetPlanet}>
-          <Text style={styles.resetButtonText}>🔄 Réinitialiser la planète</Text>
+        <TouchableOpacity onPress={resetPlanet}>
+          <Text>🔄 Réinitialiser la planète</Text>
         </TouchableOpacity>
       )}
     </ScrollView>

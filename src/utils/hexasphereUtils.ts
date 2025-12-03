@@ -219,3 +219,6 @@ export function calculerDimensionsGrilleHauteurFixe(
     };
 }
 
+// const _defaultHexasphereData = createHexasphereData();
+// export const DEFAULT_TILE_COUNT = _defaultHexasphereData.tileCount;
+

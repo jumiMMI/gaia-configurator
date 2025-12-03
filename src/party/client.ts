@@ -2,6 +2,7 @@ import PartySocket from "partysocket";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BiomeData,
+  PlanetStatsData,
   ResetPlanetMessage,
   SetBiomeMessage,
   isResetPlanetMessage,
@@ -29,6 +30,7 @@ interface UsePlanetSyncReturn {
   sendBiomeUpdate: (tileIndex: number, biome: BiomeData) => void;
   resetPlanet: () => void;
   isConnected: boolean;
+  stats: PlanetStatsData | null;
 }
 
 /**
@@ -37,6 +39,7 @@ interface UsePlanetSyncReturn {
 export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): UsePlanetSyncReturn {
   const [tileBiomes, setTileBiomes] = useState<Record<number, BiomeData>>({});
   const [isConnected, setIsConnected] = useState(false);
+  const [planetStats, setPlanetStats] = useState<PlanetStatsData | null>(null);
   const socketRef = useRef<PartySocket | null>(null);
 
   useEffect(() => {
@@ -66,6 +69,9 @@ export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): Us
         if (isSyncStateMessage(data)) {
           console.log(`[PartyKit] SYNC_STATE reçu:`, Object.keys(data.tileBiomes).length, "tuiles");
           setTileBiomes(data.tileBiomes);
+          if (data.stats) {
+            setPlanetStats(data.stats);
+          }
           return;
         }
 
@@ -76,6 +82,9 @@ export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): Us
             ...prev,
             [data.tileIndex]: data.biome,
           }));
+          if (data.stats) {
+            setPlanetStats(data.stats);
+          }
           onBiomeUpdate?.(data.tileIndex, data.biome);
           return;
         }
@@ -84,6 +93,9 @@ export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): Us
         if (isResetPlanetMessage(data)) {
           console.log(`[PartyKit] RESET_PLANET reçu`);
           setTileBiomes({});
+          if (data.stats) {
+            setPlanetStats(data.stats);
+          }
           return;
         }
       } catch {
@@ -141,5 +153,6 @@ export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): Us
     sendBiomeUpdate,
     resetPlanet,
     isConnected,
+    stats: planetStats,
   };
 }

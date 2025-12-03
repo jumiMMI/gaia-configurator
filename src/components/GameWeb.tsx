@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import { usePlanetSync } from "../party/client";
+import PlanetStats from "./PlanetStats";
 import ThreeScene from "./threejs/ThreeScene";
 
 interface GameWebProps {
@@ -8,7 +9,7 @@ interface GameWebProps {
 
 export default function GameWeb({ roomName }: GameWebProps) {
 
-  const { tileBiomes, isConnected } = usePlanetSync({
+  const { tileBiomes, isConnected, stats } = usePlanetSync({
     room: roomName,
   });
 
@@ -23,7 +24,13 @@ export default function GameWeb({ roomName }: GameWebProps) {
           </Text>
         </View>
       </View>
-      <ThreeScene tileBiomes={tileBiomes} />
+      
+      <View style={styles.content}>
+        <ThreeScene tileBiomes={tileBiomes} />
+        <View style={styles.statsPanel}>
+          <PlanetStats stats={stats} />
+        </View>
+      </View>
     </View>
   );
 }
@@ -58,5 +65,14 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 14,
     color: "#666",
+  },
+  content: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  statsPanel: {
+    position: "absolute",
+    top: 10,
+    right: 10,
   },
 });
