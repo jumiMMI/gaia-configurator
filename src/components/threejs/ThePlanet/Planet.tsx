@@ -29,7 +29,7 @@ export function animatePlanet(planet: THREE.Group) {
     planet.rotation.y += 0.001;
 }
 
-// Met à jour les couleurs des tuiles selon les biomes
+// update les biomes
 export function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record<number, BiomeData>) {
     planet.children.forEach((child) => {
         if (child instanceof THREE.Mesh) {
@@ -65,7 +65,7 @@ function createTileGeometry(tile: any): THREE.BufferGeometry {
         vertices.push(Number(bp.x), Number(bp.y), Number(bp.z));
     }
     
-    // Créer les triangles (fan depuis le centre)
+    // Créer les triangles
     for (let j = 0; j < tile.boundary.length; j++) {
         indices.push(
             0, // centre

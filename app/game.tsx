@@ -29,7 +29,7 @@ export default function Game() {
     checkCinematic();
   }, []);
 
-  // Afficher un loader pendant la vérification
+  // loader
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -39,12 +39,10 @@ export default function Game() {
     );
   }
 
-  // Si non autorisé, ne rien afficher (la redirection est en cours)
   if (!isAuthorized) {
     return null;
   }
 
-  // Afficher l'interface appropriée selon la plateforme
   const isWeb = Platform.OS === "web";
   
   return isWeb ? <GameWeb /> : <GameMobile />;

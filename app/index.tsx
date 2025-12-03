@@ -13,9 +13,6 @@ export default function Home() {
     router.push(`/room/${name}`);
   };
 
-  const goToGaia = () => {
-    router.push("/gaia");
-  };
 
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
@@ -26,9 +23,6 @@ export default function Home() {
         style={{ borderWidth: 1, padding: 10, width: "100%", marginBottom: 20 }}
       />
       <Button title="Créer / Rejoindre une room" onPress={goToRoom} />
-      <View style={{ marginTop: 20 }}>
-        <Button title="Jouer à Gaia" onPress={goToGaia} />
-      </View>
     </View>
   );
 }

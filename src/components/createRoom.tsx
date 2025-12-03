@@ -1,16 +1,15 @@
-import { useState } from "react";
-import { View, Text, Button, TextInput, Alert } from "react-native";
 import { createPartyClient } from "@/src/party/client";
+import { useState } from "react";
+import { Alert, Button, Text, TextInput, View } from "react-native";
 
 export default function CreateRoom() {
   const [roomName, setRoomName] = useState("");
 
   const createRoom = () => {
-    // Générer un nom unique si l’utilisateur n’a pas saisi
     const name = roomName || `room-${Math.floor(Math.random() * 10000)}`;
     setRoomName(name);
 
-    // Se connecter comme host
+    // host
     const socket = createPartyClient(name, "10.137.98.7:1999"); 
 
     socket.onopen = () => {

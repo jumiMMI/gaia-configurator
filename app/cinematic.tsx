@@ -8,7 +8,7 @@ export default function Cinematic() {
   const router = useRouter();
   const [currentScene, setCurrentScene] = useState(0);
 
-  // Scènes de la cinématique (placeholder pour l'instant)
+  // test cinematique
   const scenes = [
     "Scène 1: L'histoire commence...",
     "Scène 2: Le héros découvre un nouveau monde...",
@@ -19,21 +19,21 @@ export default function Cinematic() {
     if (currentScene < scenes.length - 1) {
       const timer = setTimeout(() => {
         setCurrentScene(currentScene + 1);
-      }, 3000); // Change de scène toutes les 3 secondes
+      }, 3000); 
 
       return () => clearTimeout(timer);
     }
   }, [currentScene]);
 
   const startGame = async () => {
-    // Marquer que la cinématique est terminée
+
     await AsyncStorage.setItem("cinematicCompleted", "true");
-    // Rediriger vers le jeu
+
     router.push("/game" as any);
   };
 
   const skipCinematic = async () => {
-    // Même chose si on passe la cinématique
+
     await AsyncStorage.setItem("cinematicCompleted", "true");
     router.push("/game" as any);
   };
