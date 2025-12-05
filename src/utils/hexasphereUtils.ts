@@ -5,10 +5,19 @@ import Hexasphere from 'hexasphere.js';
  * 
  */
 export const DEFAULT_HEXASPHERE_CONFIG = {
-    radius: 2.5,
+    radius: 2,
     subDivisions: 3,
-    tileWidth: 0.90,
+    tileWidth: 1,
 } as const;
+
+export function calculateTileCount(subDivisions: number): number {
+    return 10 * subDivisions * subDivisions + 2;
+}
+
+/**
+ * Nombre de tuiles avec la configuration par défaut
+ */
+export const DEFAULT_TILE_COUNT = calculateTileCount(DEFAULT_HEXASPHERE_CONFIG.subDivisions);
 
 /**
  * Interface pour les données hexasphere générées
@@ -32,7 +41,6 @@ export interface HexasphereConfig {
 
 /**
  * Génère les données hexasphere avec les paramètres spécifiés
- * Utilise les valeurs par défaut si non spécifiées
  * 
  * @param config - Configuration optionnelle pour l'hexasphere
  * @returns Les données hexasphere avec toutes les tuiles
@@ -218,7 +226,4 @@ export function calculerDimensionsGrilleHauteurFixe(
         emptyCells,
     };
 }
-
-// const _defaultHexasphereData = createHexasphereData();
-// export const DEFAULT_TILE_COUNT = _defaultHexasphereData.tileCount;
 

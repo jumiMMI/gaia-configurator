@@ -138,7 +138,6 @@ export default class PlanetState {
         });
 
         // Les ressources sont la somme totale (pas de division)
-        // Plus tu places de biomes productifs, plus tu as de ressources
         return {
             eau: Math.max(0, totalEau),
             nourriture: Math.max(0, totalNourriture),

@@ -35,7 +35,7 @@ export default function PlanetStats({ stats }: PlanetStatsProps) {
                 <Text style={styles.sectionTitle}>Ressources</Text>
                 <View style={styles.row}>
                     <Text style={styles.stat}>🚰 Eau: {stats.resources.eau}</Text>
-                    <Text style={styles.stat}>🍎 Nourr: {stats.resources.nourriture} %</Text>
+                    <Text style={styles.stat}>🍎 Graille: {stats.resources.nourriture} %</Text>
                 </View>
                 <View style={styles.row}>
                     <Text style={styles.stat}>⚡ Énergie: {stats.resources.energie}</Text>
