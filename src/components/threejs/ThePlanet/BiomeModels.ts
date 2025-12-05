@@ -15,7 +15,7 @@ const modelAssets: Record<string, any> = {
 };
 
 /**
- * Charge tous les modèles des biomes en mémoire
+ * charge les modèles en mémoire
  */
 export async function loadAllBiomeModels(): Promise<void> {
     if (Platform.OS !== 'web') return;
@@ -23,7 +23,7 @@ export async function loadAllBiomeModels(): Promise<void> {
     const loader = new GLTFLoader();
     
     for (const [biomeName, assetModule] of Object.entries(modelAssets)) {
-        // Skip si déjà chargé
+        // skip si déjà chargé
         if (loadedModels.has(biomeName)) continue;
         
         const asset = Asset.fromModule(assetModule);
@@ -44,18 +44,14 @@ export async function loadAllBiomeModels(): Promise<void> {
     }
 }
 
-/**
- * 
- */
+
 export function getModelForBiome(biomeName: string): THREE.Object3D | null {
     const model = loadedModels.get(biomeName);
     if (!model) return null;
     return model.clone();
 }
 
-/**
- * 
- */
+
 export function hasModelForBiome(biomeName: string): boolean {
     return loadedModels.has(biomeName);
 }

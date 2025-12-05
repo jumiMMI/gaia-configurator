@@ -2,7 +2,7 @@ import { PlanetStatsData } from "../party/messages";
 import { Biome } from "./Biome";
 
 
-// ÉTAT INITIAL DE LA PLANÈTE 
+// ÉTAT INITIAL (hasard) DE LA PLANÈTE 
 const INITIAL_STATE = {
     temperature: 20,
     humidite: 20,
@@ -11,7 +11,7 @@ const INITIAL_STATE = {
 };
 
 
-// PLAGES IDÉALES POUR L'ENVIRONNEMENT
+// valeurs au hasard pour l'environnement
 const IDEAL_RANGES = {
     temperature: { min: 15, max: 25 },
     humidite: { min: 40, max: 70 },
@@ -92,11 +92,7 @@ export default class PlanetState {
     }
 
 
-    // CALCUL DES STATISTIQUES ENVIRONNEMENT
-
-    /**
-     * Formule : État initial + (Σ contributions / nombre total tuiles)
-     */
+    // CALCUL DES STATISTIQUES ENVIRONNEMENT (à revoir)
     getEnvironmentStats(): EnvironmentStats {
         let totalTemp = 0;
         let totalHumidite = 0;
@@ -110,7 +106,6 @@ export default class PlanetState {
             totalLumiere += biome.lumiere;
         });
 
-        // Calculer la contribution moyenne puis l'ajouter à l'état initial
         const divisor = this.totalTiles > 0 ? this.totalTiles : 1;
 
         return {
@@ -137,7 +132,7 @@ export default class PlanetState {
             totalOxygene += biome.oxygene;
         });
 
-        // Les ressources sont la somme totale (pas de division)
+        // somme totale des ressources
         return {
             eau: Math.max(0, totalEau),
             nourriture: Math.max(0, totalNourriture),
@@ -147,10 +142,6 @@ export default class PlanetState {
     }
 
     // CALCUL DES SCORES
-
-    /**
-     * Score environnement : 100 si dans la plage idéale, décroît sinon
-     */
     getEnvironmentScore(): EnvironmentScore {
         const stats = this.getEnvironmentStats();
 
@@ -178,9 +169,6 @@ export default class PlanetState {
         };
     }
 
-    /**
-     * Score ressources : 100 si >= seuil minimum, proportionnel sinon
-     */
     getResourceScore(): ResourceScore {
         const stats = this.getResourceStats();
 
@@ -208,11 +196,6 @@ export default class PlanetState {
 
 
     // VIABILITÉ DE LA PLANÈTE
-
-    /**
-     * Vérifie si la planète peut accueillir la vie humaine
-     * Condition : Environnement OK (score >= 75) ET Ressources OK (toutes >= minimum)
-     */
     getViability(): PlanetViability {
         const environmentScore = this.getEnvironmentScore();
         const resourceScore = this.getResourceScore();
@@ -242,7 +225,6 @@ export default class PlanetState {
     }
     
     //Raccourci pour vérifier rapidement si la planète est viable
-
     isViable(): boolean {
         return this.getViability().isViable;
     }

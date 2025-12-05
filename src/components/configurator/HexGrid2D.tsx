@@ -92,7 +92,7 @@ export default function HexGrid2D({
             });
         });
 
-    // Style animé pour appliquer le déplacement
+
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [
             { translateX: translateX.value },
@@ -119,7 +119,7 @@ export default function HexGrid2D({
             }
         }
 
-        // Créer le mapping tuile index → position grille [x, y]
+        // mapping tuile index → position grille [x, y]
         for (let i = 0; i < hexData.tileCount; i++) {
             const x = i % dims.largeur;
             const y = Math.floor(i / dims.largeur);

@@ -1,6 +1,5 @@
 /**
  * Classe Biome
- * 
  */
 export class Biome {
     nom: string;

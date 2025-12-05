@@ -10,10 +10,6 @@ interface User {
   isHost: boolean;
 }
 
-// function generateName() {
-
-// }
-
 export default class PartyServer {
 
   private clients: Connection<unknown>[] = [];
@@ -36,7 +32,6 @@ export default class PartyServer {
 
     const newUser: User = {
       id: connection.id,
-      // name: generateName(),
       isHost: connection.id === this.hostId
     };
 
@@ -58,17 +53,6 @@ export default class PartyServer {
         users: this.users,
       }))
     );
-
-    // // Message de bienvenue avec le nom d'utilisateur
-    // const welcomeMessage = `${newUser.name} a rejoint la room !`;
-    // connection.send(welcomeMessage);
-    
-    // // Notifier les autres clients qu'un nouvel utilisateur a rejoint
-    // this.clients.forEach(c => {
-    //   if (c !== connection) {
-    //     c.send(welcomeMessage);
-    //   }
-    // });
 
     // Envoyer l'historique
     this.history.forEach((msg) => connection.send(msg));
@@ -100,7 +84,7 @@ export default class PartyServer {
         
         console.log(`Biome mis à jour : tuile ${setBiomeMsg.tileIndex} → ${setBiomeMsg.biome.nom}`);
         
-        // Broadcaster à tous les autres clients
+        // envoie un message à tous les autres clients
         this.clients.forEach((c) => {
           if (c !== sender) {
             c.send(JSON.stringify({ ...setBiomeMsg, stats }));
@@ -117,7 +101,7 @@ export default class PartyServer {
         const stats = this.planetState.getFullStats();  
         console.log(`Planète réinitialisée !`);
         
-        // Broadcaster à tous les clients (y compris l'expéditeur pour confirmation)
+        // envoie un message à tous les clients
         this.clients.forEach((c) => {
           c.send(JSON.stringify({ type: 'RESET_PLANET', stats }));
         });
@@ -129,9 +113,8 @@ export default class PartyServer {
   }
 
   onDisconnect(connection: Connection<unknown>, roomName: string) {
-    // Trouver le nom de l'utilisateur qui se déconnecte
-    const disconnectedUser = this.users.find(u => u.id === connection.id);
-    // const disconnectedUserName = disconnectedUser?.name || connection.id;
+    // const disconnectedUser = this.users.find(u => u.id === connection.id);
+    // // const disconnectedUserName = disconnectedUser?.name || connection.id;
     
     this.clients = this.clients.filter((c) => c !== connection);
     this.users = this.users.filter((u) => u.id !== connection.id);
@@ -145,11 +128,6 @@ export default class PartyServer {
         users: this.users,
       }))
     );
-    
-    // // Notifier les autres clients de la déconnexion
-    // if (this.clients.length > 0) {
-    //   const disconnectMessage = `${disconnectedUserName} a quitté la room.`;
-    //   this.clients.forEach(c => c.send(disconnectMessage));
-    // }
+  
   }
 }

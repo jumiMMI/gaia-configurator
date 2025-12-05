@@ -1,6 +1,5 @@
 /**
  * Types de messages pour la synchronisation PartyKit
- * 
  */
 
 export interface PlanetStatsData {
@@ -38,13 +37,13 @@ export interface PlanetStatsData {
     isViable: boolean;
 }
 
-// Structure simplifiée du biome pour le transport
+// biomeData
 export interface BiomeData {
     nom: string;
     couleur: string;
 }
 
-// Message envoyé quand un biome est appliqué sur une tuile
+// envoie un message si biome sur une tuile
 export interface SetBiomeMessage {
     type: 'SET_BIOME';
     tileIndex: number;
@@ -52,27 +51,27 @@ export interface SetBiomeMessage {
     stats?: PlanetStatsData;
 }
 
-// Message envoyé aux nouveaux clients pour synchroniser l'état
+// Message synchronise l'etat
 export interface SyncStateMessage {
     type: 'SYNC_STATE';
     tileBiomes: Record<number, BiomeData>; // { [tileIndex]: BiomeData }
     stats: PlanetStatsData;
 }
 
-// Message pour réinitialiser la planète
+// message pour réinitialiser la planète
 export interface ResetPlanetMessage {
     type: 'RESET_PLANET';
     stats?: PlanetStatsData;
 }
 
-// Message de rôle (existant)
+// Message de rôle
 export interface RoleMessage {
     type: 'role';
     isHost: boolean;
     hostId: string;
 }
 
-// Message de liste d'utilisateurs (existant)
+// Message de liste d'utilisateurs
 export interface UsersMessage {
     type: 'users';
     users: Array<{
@@ -82,7 +81,7 @@ export interface UsersMessage {
     }>;
 }
 
-// Union de tous les types de messages
+// tous les messages
 export type PartyMessage =
     | SetBiomeMessage
     | SyncStateMessage

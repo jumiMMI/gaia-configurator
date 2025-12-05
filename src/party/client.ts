@@ -43,7 +43,7 @@ export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): Us
   const socketRef = useRef<PartySocket | null>(null);
 
   useEffect(() => {
-    // Créer la connexion WebSocket
+    // connexion WebSocket
     const socket = new PartySocket({
       host: PARTYKIT_HOST,
       room,
@@ -103,14 +103,13 @@ export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): Us
       }
     };
 
-    // Cleanup à la déconnexion
+    // Cleanup 
     return () => {
       socket.close();
       socketRef.current = null;
     };
   }, [room, onBiomeUpdate]);
 
-  // Fonction pour envoyer une mise à jour de biome
   const sendBiomeUpdate = useCallback((tileIndex: number, biome: BiomeData) => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
       console.warn("[PartyKit] Impossible d'envoyer: non connecté");
@@ -126,14 +125,13 @@ export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): Us
     socketRef.current.send(JSON.stringify(message));
     console.log(`[PartyKit] SET_BIOME envoyé: tuile ${tileIndex} → ${biome.nom}`);
 
-    // Mettre à jour l'état local immédiatement
     setTileBiomes((prev) => ({
       ...prev,
       [tileIndex]: biome,
     }));
   }, []);
 
-  // Fonction pour réinitialiser la planète
+
   const resetPlanet = useCallback(() => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
       console.warn("[PartyKit] Impossible d'envoyer: non connecté");

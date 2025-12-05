@@ -1,9 +1,5 @@
 import Hexasphere from 'hexasphere.js';
 
-/**
- * 
- * 
- */
 export const DEFAULT_HEXASPHERE_CONFIG = {
     radius: 2,
     subDivisions: 3,
@@ -90,19 +86,16 @@ export function areConfigsEqual(
  * Dimensions de la grille 2D (compatible avec la classe Planet)
  */
 export interface GridDimensions {
-    largeur: number;  // Nombre de colonnes (cols)
-    hauteur: number; // Nombre de lignes (rows)
-    totalCells: number; // largeur × hauteur
-    emptyCells: number; // Nombre de cellules vides (totalCells - tileCount)
+    largeur: number; 
+    hauteur: number; 
+    totalCells: number;
+    emptyCells: number; // (totalCells - tileCount)
 }
 
 /**
- * Calcule les dimensions optimales d'une grille 2D pour un nombre donné de tuiles
- * Basé sur le concept de la classe Planet avec largeur × hauteur
- * 
- * @param nombreTuiles - Nombre total de tuiles à placer dans la grille
- * @param ratio - Ratio largeur/hauteur souhaité (par défaut 1.0 = carré)
- * @returns Les dimensions de la grille (largeur, hauteur, totalCells, emptyCells)
+ * @param nombreTuiles - Nombre total de tuiles
+ * @param ratio - Ratio largeur/hauteur souhaité
+ * @returns Les dimensions de la grille
  */
 export function calculerDimensionsGrille(
     nombreTuiles: number,
@@ -122,7 +115,7 @@ export function calculerDimensionsGrille(
     let largeur = Math.ceil(sqrt);
     let hauteur = Math.ceil(nombreTuiles / largeur);
 
-    // Méthode 2 : Ajuster selon le ratio souhaité
+    // Ajuster selon le ratio souhaité
     if (ratio !== 1.0) {
         hauteur = Math.ceil(Math.sqrt(nombreTuiles / ratio));
         largeur = Math.ceil(nombreTuiles / hauteur);
@@ -159,9 +152,7 @@ export function calculerDimensionsGrille(
 
 /**
  * Calcule les dimensions de la grille à partir des données hexasphere
- * Utilise la configuration par défaut
- * 
- * @param ratio - Ratio largeur/hauteur souhaité (par défaut 1.0)
+ * @param ratio - Ratio largeur/hauteur souhaité
  * @returns Les dimensions de la grille
  */
 export function calculerDimensionsGrilleFromHexasphere(
@@ -173,10 +164,8 @@ export function calculerDimensionsGrilleFromHexasphere(
 
 /**
  * Calcule les dimensions avec un nombre de colonnes fixe
- * Utile pour forcer une largeur spécifique
- * 
- * @param nombreTuiles - Nombre total de tuiles
- * @param largeurFixe - Nombre de colonnes fixe
+ * @param nombreTuiles
+ * @param largeurFixe
  * @returns Les dimensions de la grille
  */
 export function calculerDimensionsGrilleLargeurFixe(
@@ -201,10 +190,8 @@ export function calculerDimensionsGrilleLargeurFixe(
 
 /**
  * Calcule les dimensions avec un nombre de lignes fixe
- * Utile pour forcer une hauteur spécifique
- * 
- * @param nombreTuiles - Nombre total de tuiles
- * @param hauteurFixe - Nombre de lignes fixe
+ * @param nombreTuiles
+ * @param hauteurFixe 
  * @returns Les dimensions de la grille
  */
 export function calculerDimensionsGrilleHauteurFixe(
