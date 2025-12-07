@@ -49,7 +49,7 @@ export interface EnvironmentScore {
     humidite: number;     
     CO2: number;          
     lumiere: number;      
-    global: number;       // moy
+    global: number;
 }
 
 export interface ResourceScore {

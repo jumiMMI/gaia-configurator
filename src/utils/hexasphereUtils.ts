@@ -26,21 +26,13 @@ export interface HexasphereData {
     tileWidth: number;
 }
 
-/**
- * Configuration personnalisable pour l'hexasphere
- */
 export interface HexasphereConfig {
     radius?: number;
     subDivisions?: number;
     tileWidth?: number;
 }
 
-/**
- * Génère les données hexasphere avec les paramètres spécifiés
- * 
- * @param config - Configuration optionnelle pour l'hexasphere
- * @returns Les données hexasphere avec toutes les tuiles
- */
+
 export function createHexasphereData(config?: HexasphereConfig): HexasphereData {
     const radius = config?.radius ?? DEFAULT_HEXASPHERE_CONFIG.radius;
     const subDivisions = config?.subDivisions ?? DEFAULT_HEXASPHERE_CONFIG.subDivisions;
@@ -92,11 +84,7 @@ export interface GridDimensions {
     emptyCells: number; // (totalCells - tileCount)
 }
 
-/**
- * @param nombreTuiles - Nombre total de tuiles
- * @param ratio - Ratio largeur/hauteur souhaité
- * @returns Les dimensions de la grille
- */
+
 export function calculerDimensionsGrille(
     nombreTuiles: number,
     ratio: number = 1.0
@@ -150,11 +138,7 @@ export function calculerDimensionsGrille(
     };
 }
 
-/**
- * Calcule les dimensions de la grille à partir des données hexasphere
- * @param ratio - Ratio largeur/hauteur souhaité
- * @returns Les dimensions de la grille
- */
+
 export function calculerDimensionsGrilleFromHexasphere(
     ratio: number = 1.0
 ): GridDimensions {
@@ -162,12 +146,6 @@ export function calculerDimensionsGrilleFromHexasphere(
     return calculerDimensionsGrille(hexData.tileCount, ratio);
 }
 
-/**
- * Calcule les dimensions avec un nombre de colonnes fixe
- * @param nombreTuiles
- * @param largeurFixe
- * @returns Les dimensions de la grille
- */
 export function calculerDimensionsGrilleLargeurFixe(
     nombreTuiles: number,
     largeurFixe: number
@@ -188,12 +166,7 @@ export function calculerDimensionsGrilleLargeurFixe(
     };
 }
 
-/**
- * Calcule les dimensions avec un nombre de lignes fixe
- * @param nombreTuiles
- * @param hauteurFixe 
- * @returns Les dimensions de la grille
- */
+
 export function calculerDimensionsGrilleHauteurFixe(
     nombreTuiles: number,
     hauteurFixe: number

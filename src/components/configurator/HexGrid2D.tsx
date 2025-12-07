@@ -14,13 +14,6 @@ import {
 
 const SQRT3 = Math.sqrt(3);
 
-/**
- * 
- * @param cx 
- * @param cy
- * @param radius -
- * @returns
- */
 function getHexagonPoints(cx: number, cy: number, radius: number): string {
     const points: string[] = [];
     for (let i = 0; i < 6; i++) {

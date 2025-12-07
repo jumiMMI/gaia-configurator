@@ -5,7 +5,6 @@ import { getModelForBiome } from './BiomeModels';
 
 const DEFAULT_TILE_COLOR = 0x084495;
 
-// Stockage des modèles placés (pour pouvoir les supprimer)
 const placedModels: Map<number, THREE.Object3D> = new Map();
 
 export default function createPlanet(): THREE.Group {
@@ -44,7 +43,7 @@ export default function createPlanet(): THREE.Group {
         // Stocker dans userData
         mesh.userData.boundary0 = { x: boundaryVec.x, y: boundaryVec.y, z: boundaryVec.z };
         mesh.userData.boundary1 = { x: boundary1.x, y: boundary1.y, z: boundary1.z };
-        mesh.userData.sideCount = tile.boundary.length; // 5 = pentagone, 6 = hexagone
+        mesh.userData.sideCount = tile.boundary.length;
         mesh.userData.isPentagon = tile.boundary.length === 5;
 
         mesh.userData.hexRadius = centerVec.distanceTo(boundaryVec);
@@ -77,11 +76,6 @@ export function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record<numbe
             (child.material as THREE.MeshBasicMaterial).color = color;
 
             if (!placedModels.has(tileIndex)) {
-                // Ignorer les pentagones (12 tuiles à 5 côtés)
-                if (child.userData.isPentagon) {
-                    console.log(`Tile ${tileIndex} est un PENTAGONE - modèle ignoré`);
-                    return;
-                }
                 
                 const model = getModelForBiome(biomeData.nom);
                 const b0 = child.userData.boundary0;
@@ -103,7 +97,6 @@ export function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record<numbe
                     const scale = (hexDiameter / modelDiameter) * (2 / Math.sqrt(3));
                     model.scale.setScalar(scale);
 
-                    // ====== CORRECTION DE ROTATION ======
                     // Calculer la direction du côté de l'hexagone (b0 → b1)
                     const edgeDirection = new THREE.Vector3(b1.x - b0.x, b1.y - b0.y, b1.z - b0.z);
                     // Projeter sur le plan tangent
@@ -111,33 +104,31 @@ export function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record<numbe
                     edgeDirection.sub(normal.clone().multiplyScalar(dot));
                     edgeDirection.normalize();
                     
-                    // Calculer l'axe X du modèle après la rotation "debout"
                     const modelAxisX = new THREE.Vector3(1, 0, 0).applyQuaternion(quaternion);
                     
-                    // Calculer l'angle de correction (entre l'axe X du modèle et le côté de l'hex)
                     const angleCorrection = Math.atan2(
                         edgeDirection.clone().cross(modelAxisX).dot(normal),
                         edgeDirection.dot(modelAxisX)
                     );
                     
-                    // Offset pour compenser l'orientation "pointy-top" du modèle (30°)
-                    const offsetDegrees = 30; // Ajuster si nécessaire : 30, -30, 60, -60, 90...
+                    // offset pour l'orientation
+                    const offsetDegrees = 30; 
                     const offset = THREE.MathUtils.degToRad(offsetDegrees);
                     
-                    // Appliquer la rotation de correction autour de la normale
+                    // appliquer la rotation de correction autour de la normale
                     const quaternionCorrection = new THREE.Quaternion().setFromAxisAngle(normal, -angleCorrection + offset);
                     model.quaternion.premultiply(quaternionCorrection);
-                    // ====== FIN CORRECTION ======
+
 
                     planet.add(model);
                     placedModels.set(tileIndex, model);
                 }
             }
         } else {
-            // Remettre la couleur par défaut
+
             (child.material as THREE.MeshBasicMaterial).color.setHex(DEFAULT_TILE_COLOR);
 
-            // Supprimer le modèle si présent
+            // supp modele
             const existingModel = placedModels.get(tileIndex);
             if (existingModel) {
                 planet.remove(existingModel);
@@ -147,7 +138,7 @@ export function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record<numbe
     });
 }
 
-// Crée la géométrie d'une seule tuile
+
 function createTileGeometry(tile: any): THREE.BufferGeometry {
     const vertices: number[] = [];
     const indices: number[] = [];
