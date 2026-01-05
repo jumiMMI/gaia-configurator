@@ -2,21 +2,21 @@ import { PlanetStatsData } from "../party/messages";
 import { Biome } from "./Biome";
 
 
-// ÉTAT INITIAL (hasard) DE LA PLANÈTE 
+// ÉTAT INITIAL
 const INITIAL_STATE = {
-    temperature: 20,
-    humidite: 20,
-    CO2: 2,
-    lumiere: 50,
+    temperature: 12,      
+    humidite: 35,         
+    CO2: 250,             
+    lumiere: 35,          
 };
 
 
-// valeurs au hasard pour l'environnement
+// Plages idéales pour la vie
 const IDEAL_RANGES = {
-    temperature: { min: 15, max: 25 },
+    temperature: { min: 18, max: 24 },    
     humidite: { min: 40, max: 70 },
-    CO2: { min: 20, max: 45 },
-    lumiere: { min: 40, max: 70 },
+    CO2: { min: 280, max: 400 },
+    lumiere: { min: 40, max: 60 },
 };
 
 
@@ -92,12 +92,14 @@ export default class PlanetState {
     }
 
 
-    // CALCUL DES STATISTIQUES ENVIRONNEMENT (à revoir)
+    // CALCUL DES STATISTIQUES ENVIRONNEMENT
     getEnvironmentStats(): EnvironmentStats {
         let totalTemp = 0;
         let totalHumidite = 0;
         let totalCO2 = 0;
         let totalLumiere = 0;
+
+        const biomeCount = this.tileBiomes.size;
 
         this.tileBiomes.forEach((biome) => {
             totalTemp += biome.temperature;
@@ -106,13 +108,19 @@ export default class PlanetState {
             totalLumiere += biome.lumiere;
         });
 
-        const divisor = this.totalTiles > 0 ? this.totalTiles : 1;
 
+        const divisor = this.totalTiles > 0 ? this.totalTiles : 1;
+        
+        // Avec ce facteur, 10 déserts sur 100 tuiles donneront +7.5°C au lieu de +1.5°C
+        const IMPACT_MULTIPLIER = 2.5;
+
+        const calculatedCO2 = INITIAL_STATE.CO2 + ((totalCO2 / divisor) * IMPACT_MULTIPLIER);
+        
         return {
-            temperature: INITIAL_STATE.temperature + (totalTemp / divisor),
-            humidite: INITIAL_STATE.humidite + (totalHumidite / divisor),
-            CO2: INITIAL_STATE.CO2 + (totalCO2 / divisor),
-            lumiere: INITIAL_STATE.lumiere + (totalLumiere / divisor),
+            temperature: INITIAL_STATE.temperature + ((totalTemp / divisor) * IMPACT_MULTIPLIER),
+            humidite: Math.max(0, Math.min(100, INITIAL_STATE.humidite + ((totalHumidite / divisor) * IMPACT_MULTIPLIER))), // Limité entre 0 et 100%
+            CO2: Math.max(0, calculatedCO2),
+            lumiere: Math.max(0, INITIAL_STATE.lumiere + ((totalLumiere / divisor) * IMPACT_MULTIPLIER)),
         };
     }
 

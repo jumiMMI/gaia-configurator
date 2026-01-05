@@ -98,19 +98,19 @@ export function calculerDimensionsGrille(
         };
     }
 
-
+    // Calcul initial : grille la plus proche d'un carré
     const sqrt = Math.sqrt(nombreTuiles);
     let largeur = Math.ceil(sqrt);
     let hauteur = Math.ceil(nombreTuiles / largeur);
 
-    // Ajuster selon le ratio souhaité
+    // Ajuster selon le ratio souhaité (si différent de 1.0)
     if (ratio !== 1.0) {
         hauteur = Math.ceil(Math.sqrt(nombreTuiles / ratio));
         largeur = Math.ceil(nombreTuiles / hauteur);
     }
 
-    // Méthode 3 : Optimiser pour minimiser les cellules vides
-    // Tester quelques combinaisons autour de la valeur calculée
+    // Optimisation : tester quelques combinaisons autour de la valeur calculée
+    // pour trouver celle qui minimise le nombre de cellules vides
     let meilleureLargeur = largeur;
     let meilleureHauteur = hauteur;
     let minVides = largeur * hauteur - nombreTuiles;
@@ -144,46 +144,5 @@ export function calculerDimensionsGrilleFromHexasphere(
 ): GridDimensions {
     const hexData = getDefaultHexasphereData();
     return calculerDimensionsGrille(hexData.tileCount, ratio);
-}
-
-export function calculerDimensionsGrilleLargeurFixe(
-    nombreTuiles: number,
-    largeurFixe: number
-): GridDimensions {
-    if (largeurFixe <= 0) {
-        return calculerDimensionsGrille(nombreTuiles);
-    }
-
-    const hauteur = Math.ceil(nombreTuiles / largeurFixe);
-    const totalCells = largeurFixe * hauteur;
-    const emptyCells = totalCells - nombreTuiles;
-
-    return {
-        largeur: largeurFixe,
-        hauteur,
-        totalCells,
-        emptyCells,
-    };
-}
-
-
-export function calculerDimensionsGrilleHauteurFixe(
-    nombreTuiles: number,
-    hauteurFixe: number
-): GridDimensions {
-    if (hauteurFixe <= 0) {
-        return calculerDimensionsGrille(nombreTuiles);
-    }
-
-    const largeur = Math.ceil(nombreTuiles / hauteurFixe);
-    const totalCells = largeur * hauteurFixe;
-    const emptyCells = totalCells - nombreTuiles;
-
-    return {
-        largeur,
-        hauteur: hauteurFixe,
-        totalCells,
-        emptyCells,
-    };
 }
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-native";
 import GameMobile from "../src/components/GameMobile";
 import GameWeb from "../src/components/GameWeb";
+import { GameTimerProvider } from "../src/contexts/GameTimerContext";
 
 export default function Game() {
   const router = useRouter();
@@ -45,7 +46,11 @@ export default function Game() {
 
   const isWeb = Platform.OS === "web";
   
-  return isWeb ? <GameWeb /> : <GameMobile />;
+  return (
+    <GameTimerProvider>
+      {isWeb ? <GameWeb /> : <GameMobile />}
+    </GameTimerProvider>
+  );
 }
 
 const styles = StyleSheet.create({

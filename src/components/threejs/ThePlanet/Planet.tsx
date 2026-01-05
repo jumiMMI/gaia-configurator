@@ -1,142 +1,167 @@
 import * as THREE from 'three';
 import { BiomeData } from '../../../party/messages';
-import { getDefaultHexasphereData } from '../../../utils/hexasphereUtils';
-import { getModelForBiome } from './BiomeModels';
+import { calculerDimensionsGrilleFromHexasphere, DEFAULT_TILE_COUNT, getDefaultHexasphereData } from '../../../utils/hexasphereUtils';
+import { getModelForBiome } from './biomes/BiomeModels';
 
 const DEFAULT_TILE_COLOR = 0x084495;
+const OCEAN_TILE_COLOR = 0x3b82f6;
+const HEX_RADIUS = 0.5;
 
 const placedModels: Map<number, THREE.Object3D> = new Map();
+const placedModelsFlat: Map<number, THREE.Object3D> = new Map();
 
 export default function createPlanet(): THREE.Group {
     const hexasphereData = getDefaultHexasphereData();
     const group = new THREE.Group();
 
-    // Créer un mesh par tuile
     for (let i = 0; i < hexasphereData.hexasphere.tiles.length; i++) {
         const tile = hexasphereData.hexasphere.tiles[i];
+
         const geometry = createTileGeometry(tile);
         const material = new THREE.MeshBasicMaterial({
             color: DEFAULT_TILE_COLOR,
             side: THREE.DoubleSide,
             // wireframe: true,
         });
+
         const mesh = new THREE.Mesh(geometry, material);
         mesh.userData.tileIndex = i;
-        const centerVec = new THREE.Vector3(
+
+        const center = new THREE.Vector3(
             Number(tile.centerPoint.x),
             Number(tile.centerPoint.y),
             Number(tile.centerPoint.z)
         );
 
-        const boundaryVec = new THREE.Vector3(
+        const boundary0 = new THREE.Vector3(
             Number(tile.boundary[0].x),
             Number(tile.boundary[0].y),
             Number(tile.boundary[0].z)
         );
 
-        const boundary1 = new THREE.Vector3(
-            Number(tile.boundary[1].x),
-            Number(tile.boundary[1].y),
-            Number(tile.boundary[1].z)
-        );
+        mesh.userData.centerPoint = center;
+        mesh.userData.hexRadius = center.distanceTo(boundary0);
         
-        // Stocker dans userData
-        mesh.userData.boundary0 = { x: boundaryVec.x, y: boundaryVec.y, z: boundaryVec.z };
-        mesh.userData.boundary1 = { x: boundary1.x, y: boundary1.y, z: boundary1.z };
-        mesh.userData.sideCount = tile.boundary.length;
-        mesh.userData.isPentagon = tile.boundary.length === 5;
+        // Stocker les boundary points pour le calcul de scale basé sur la longueur moyenne des arêtes
+        mesh.userData.boundary = tile.boundary.map(p => ({
+            x: Number(p.x),
+            y: Number(p.y),
+            z: Number(p.z)
+        }));
 
-        mesh.userData.hexRadius = centerVec.distanceTo(boundaryVec);
-        mesh.userData.centerPoint = {
-            x: centerVec.x,
-            y: centerVec.y,
-            z: centerVec.z
-        };
         group.add(mesh);
     }
 
     return group;
 }
 
-export function animatePlanet(planet: THREE.Group) {
-    planet.rotation.y += 0.001;
-}
+
+
+// export function animatePlanet(planet: THREE.Group) {
+//     planet.rotation.y += 0.001;
+// }
 
 // update les biomes
-export function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record<number, BiomeData>) {
-    planet.children.forEach((child) => {
-        if (!(child instanceof THREE.Mesh)) return;
+export async function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record<number, BiomeData>) {
+    for (const child of planet.children) {
+        if (!(child instanceof THREE.Mesh)) continue;
 
         const tileIndex = child.userData.tileIndex;
         const biomeData = tileBiomes[tileIndex];
-        const centerPoint = child.userData.centerPoint;
+        const center = child.userData.centerPoint;
 
         if (biomeData) {
-            const color = new THREE.Color(biomeData.couleur);
-            (child.material as THREE.MeshBasicMaterial).color = color;
-
-            if (!placedModels.has(tileIndex)) {
+            if (biomeData.nom === 'Prairie') {
+                child.visible = false;
                 
-                const model = getModelForBiome(biomeData.nom);
-                const b0 = child.userData.boundary0;
-                const b1 = child.userData.boundary1;
-                if (model && centerPoint && b0 && b1) {
-                    // Positionner au centre de la tuile
-                    model.position.set(centerPoint.x, centerPoint.y, centerPoint.z);
-                    const up = new THREE.Vector3(0, 1, 0);
-                    const normal = new THREE.Vector3(centerPoint.x, centerPoint.y, centerPoint.z).normalize();
-                    const quaternion = new THREE.Quaternion().setFromUnitVectors(up, normal);
-                    model.quaternion.copy(quaternion);
-
-                    const box = new THREE.Box3().setFromObject(model);
-                    const modelSize = new THREE.Vector3();
-                    box.getSize(modelSize);
-
-                    const hexDiameter = child.userData.hexRadius * 2;
-                    const modelDiameter = Math.max(modelSize.x, modelSize.y, modelSize.z);
-                    const scale = (hexDiameter / modelDiameter) * (2 / Math.sqrt(3));
-                    model.scale.setScalar(scale);
-
-                    // Calculer la direction du côté de l'hexagone (b0 → b1)
-                    const edgeDirection = new THREE.Vector3(b1.x - b0.x, b1.y - b0.y, b1.z - b0.z);
-                    // Projeter sur le plan tangent
-                    const dot = edgeDirection.dot(normal);
-                    edgeDirection.sub(normal.clone().multiplyScalar(dot));
-                    edgeDirection.normalize();
+                // Créer le terrain procédural de la prairie
+                if (!placedModels.has(tileIndex)) {
+                    const rawBoundary = child.userData.boundary;
+                    const boundaryPoints = rawBoundary.map((p: { x: number; y: number; z: number }) => new THREE.Vector3(p.x, p.y, p.z));
                     
-                    const modelAxisX = new THREE.Vector3(1, 0, 0).applyQuaternion(quaternion);
+                    const model = await getModelForBiome(biomeData.nom, {
+                        boundary: boundaryPoints,
+                        center: center,
+                        isFlat: false,
+                        hexRadius: child.userData.hexRadius,
+                    });
                     
-                    const angleCorrection = Math.atan2(
-                        edgeDirection.clone().cross(modelAxisX).dot(normal),
-                        edgeDirection.dot(modelAxisX)
+                    if (model) {
+                        // Le terrain procédural est déjà positionné correctement dans createPrairieTerrain
+                        planet.add(model);
+                        placedModels.set(tileIndex, model);
+                    }
+                }
+            } else if (biomeData.nom === 'Océan') {
+                // Pour l'océan, utiliser juste la couleur bleue claire
+                child.visible = true;
+                child.material.color.setHex(OCEAN_TILE_COLOR);
+                child.position.y = 0;
+                child.material.depthWrite = true;
+                
+                // Supprimer le modèle existant s'il y en a un
+                const existing = placedModels.get(tileIndex);
+                if (existing) {
+                    planet.remove(existing);
+                    placedModels.delete(tileIndex);
+                }
+            } else if (biomeData.nom === 'Volcan' || biomeData.nom === 'Glacier') {
+                // Pour le volcan et le glacier, cacher la tuile de base (seul le modèle 3D sera visible)
+                child.visible = false;
+            } else {
+                child.visible = true;
+                child.material.color = new THREE.Color(biomeData.couleur);
+                child.position.y = 0;
+                child.material.depthWrite = true;
+            }
+
+            // Placer le modèle 3D seulement pour les biomes qui en ont besoin (pas Prairie, pas Océan)
+            if (biomeData.nom !== 'Prairie' && biomeData.nom !== 'Océan' && !placedModels.has(tileIndex)) {
+                const rawBoundary = child.userData.boundary;
+                const boundaryPoints = rawBoundary.map((p: { x: number; y: number; z: number }) => new THREE.Vector3(p.x, p.y, p.z));
+                
+                const model = await getModelForBiome(biomeData.nom);
+                
+                if (model) {
+                    model.position.copy(center);
+                    const normal = center.clone().normalize();
+                    model.quaternion.setFromUnitVectors(
+                        new THREE.Vector3(0, 1, 0),
+                        normal
                     );
-                    
-                    // offset pour l'orientation
-                    const offsetDegrees = 30; 
-                    const offset = THREE.MathUtils.degToRad(offsetDegrees);
-                    
-                    // appliquer la rotation de correction autour de la normale
-                    const quaternionCorrection = new THREE.Quaternion().setFromAxisAngle(normal, -angleCorrection + offset);
-                    model.quaternion.premultiply(quaternionCorrection);
 
+                    let totalEdgeLength = 0;
+                    for (let i = 0; i < boundaryPoints.length; i++) {
+                        const current = boundaryPoints[i];
+                        const next = boundaryPoints[(i + 1) % boundaryPoints.length];
+                        totalEdgeLength += current.distanceTo(next);
+                    }
+                    const avgEdgeLength = totalEdgeLength / boundaryPoints.length;
+                    
+                    const scale = avgEdgeLength * 0.90;
+                    model.scale.setScalar(scale);
 
                     planet.add(model);
                     placedModels.set(tileIndex, model);
                 }
             }
-        } else {
+        } 
+        else {
+            // Réinitialiser la couleur par défaut et réafficher la tuile de base
+            child.material.color.setHex(DEFAULT_TILE_COLOR);
+            child.visible = true;
+            child.position.y = 0; // Réinitialiser la position
+            child.material.depthWrite = true; // Réinitialiser depthWrite
 
-            (child.material as THREE.MeshBasicMaterial).color.setHex(DEFAULT_TILE_COLOR);
-
-            // supp modele
-            const existingModel = placedModels.get(tileIndex);
-            if (existingModel) {
-                planet.remove(existingModel);
+            const existing = placedModels.get(tileIndex);
+            if (existing) {
+                planet.remove(existing);
                 placedModels.delete(tileIndex);
             }
         }
-    });
+    }
 }
+
 
 
 function createTileGeometry(tile: any): THREE.BufferGeometry {
@@ -170,5 +195,172 @@ function createTileGeometry(tile: any): THREE.BufferGeometry {
     geometry.computeVertexNormals();
 
     return geometry;
+}
+
+/**
+ * Crée un hexagone 2D plat
+ */
+function createHexagonGeometry(radius: number = 0.5): THREE.BufferGeometry {
+    const vertices: number[] = [];
+    const indices: number[] = [];
+    
+    // Centre
+    vertices.push(0, 0, 0);
+    
+    // Points du périmètre
+    for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i - Math.PI / 2;
+        const x = radius * Math.cos(angle);
+        const z = radius * Math.sin(angle);
+        vertices.push(x, 0, z);
+    }
+    
+    // Créer les triangles
+    for (let i = 0; i < 6; i++) {
+        indices.push(0, i + 1, ((i + 1) % 6) + 1);
+    }
+    
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    
+    return geometry;
+}
+
+export function createPlanetFlat(): THREE.Group {
+    const group = new THREE.Group();
+    const dimensions = calculerDimensionsGrilleFromHexasphere();
+    
+
+    const SQRT3 = Math.sqrt(3);
+    const hexRadius = HEX_RADIUS;
+    const hexWidth = hexRadius * SQRT3;
+    const hexHeight = hexRadius * 2;
+    const horizSpacing = hexWidth;
+    const vertSpacing = hexHeight * 0.75;
+    
+    const gridWidth = dimensions.largeur * horizSpacing;
+    const gridHeight = dimensions.hauteur * vertSpacing;
+    const gridOffsetX = -gridWidth / 2;
+    const gridOffsetZ = -gridHeight / 2;
+    
+    const material = new THREE.MeshBasicMaterial({
+        color: DEFAULT_TILE_COLOR,
+        side: THREE.DoubleSide,
+        // wireframe: true,
+    });
+    
+    const hexGeometry = createHexagonGeometry(hexRadius);
+    
+    for (let i = 0; i < DEFAULT_TILE_COUNT; i++) {
+        const x = i % dimensions.largeur;
+        const y = Math.floor(i / dimensions.largeur);
+        
+        const offsetX = y % 2 === 1 ? hexWidth / 2 : 0;
+        const centerX = x * horizSpacing + hexWidth / 2 + offsetX + gridOffsetX;
+        const centerZ = y * vertSpacing + hexRadius + gridOffsetZ;
+        
+        const mesh = new THREE.Mesh(hexGeometry.clone(), material.clone());
+        mesh.position.set(centerX, 0, centerZ);
+        mesh.userData.tileIndex = i;
+        mesh.userData.centerPoint = new THREE.Vector3(centerX, 0, centerZ);
+        mesh.userData.isFlat = true;
+        
+
+        const avgEdgeLength = hexRadius * 2;
+        mesh.userData.avgEdgeLength = avgEdgeLength;
+        
+        group.add(mesh);
+    }
+    
+    return group;
+}
+
+/**
+ * Met à jour les biomes sur la grille plate
+ */
+export async function updatePlanetFlatBiomes(planet: THREE.Group, tileBiomes: Record<number, BiomeData>) {
+    for (const child of planet.children) {
+        if (!(child instanceof THREE.Mesh) || !child.userData.isFlat) continue;
+        
+        const tileIndex = child.userData.tileIndex;
+        const biomeData = tileBiomes[tileIndex];
+        const center = child.userData.centerPoint;
+        
+        if (biomeData) {
+            if (biomeData.nom === 'Prairie') {
+                child.visible = false;
+                
+                // Créer le terrain procédural de la prairie
+                if (!placedModelsFlat.has(tileIndex)) {
+                    const model = await getModelForBiome(biomeData.nom, {
+                        boundary: [], // Pour la version plate, on crée un hexagone régulier
+                        center: center,
+                        isFlat: true,
+                        hexRadius: HEX_RADIUS,
+                    });
+                    
+                    if (model) {
+                        model.position.copy(center);
+                        model.quaternion.identity();
+                        planet.add(model);
+                        placedModelsFlat.set(tileIndex, model);
+                    }
+                }
+            } else if (biomeData.nom === 'Océan') {
+                // Pour l'océan, utiliser juste la couleur bleue claire
+                child.visible = true;
+                child.material.color.setHex(OCEAN_TILE_COLOR);
+                child.position.y = 0;
+                child.material.depthWrite = true;
+                
+                // Supprimer le modèle existant s'il y en a un
+                const existing = placedModelsFlat.get(tileIndex);
+                if (existing) {
+                    planet.remove(existing);
+                    placedModelsFlat.delete(tileIndex);
+                }
+            } else if (biomeData.nom === 'Volcan' || biomeData.nom === 'Glacier') {
+                // Pour le volcan et le glacier, cacher la tuile de base (seul le modèle 3D sera visible)
+                child.visible = false;
+            } else {
+                child.visible = true;
+                child.material.color = new THREE.Color(biomeData.couleur);
+                child.position.y = 0;
+                child.material.depthWrite = true;
+            }
+            
+            // Placer le modèle 3D seulement pour les biomes qui en ont besoin (pas Prairie, pas Océan)
+            if (biomeData.nom !== 'Prairie' && biomeData.nom !== 'Océan' && !placedModelsFlat.has(tileIndex)) {
+                const model = await getModelForBiome(biomeData.nom);
+                
+                if (model) {
+                    model.position.copy(center);
+                    model.quaternion.identity();
+
+                    const hexRadius = HEX_RADIUS; 
+                    const modelRadiusInBlender = 0.5;
+                    const scale = hexRadius / modelRadiusInBlender;
+                    model.scale.setScalar(scale);
+                    
+                    planet.add(model);
+                    placedModelsFlat.set(tileIndex, model);
+                }
+            }
+        } else {
+            child.material.color.setHex(DEFAULT_TILE_COLOR);
+            child.visible = true;
+            child.position.y = 0; // Réinitialiser la position
+            child.material.depthWrite = true; // Réinitialiser depthWrite
+            
+            // Supprimer le modèle existant
+            const existing = placedModelsFlat.get(tileIndex);
+            if (existing) {
+                planet.remove(existing);
+                placedModelsFlat.delete(tileIndex);
+            }
+        }
+    }
 }
 

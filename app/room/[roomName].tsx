@@ -1,5 +1,6 @@
 import GameMobile from "@/src/components/GameMobile";
 import GameWeb from "@/src/components/GameWeb";
+import { GameTimerProvider } from "@/src/contexts/GameTimerContext";
 import { useLocalSearchParams } from "expo-router";
 import { Platform, Text } from "react-native";
 
@@ -14,9 +15,13 @@ export default function RoomScreen() {
     if (!roomNameString) return <Text>Room invalide</Text>;
 
     // Afficher l'interface appropriée selon la plateforme
-    if (Platform.OS === 'web') {
-        return <GameWeb roomName={roomNameString} />;
-    }
-
-    return <GameMobile roomName={roomNameString} />;
+    return (
+        <GameTimerProvider>
+            {Platform.OS === 'web' ? (
+                <GameWeb roomName={roomNameString} />
+            ) : (
+                <GameMobile roomName={roomNameString} />
+            )}
+        </GameTimerProvider>
+    );
 }

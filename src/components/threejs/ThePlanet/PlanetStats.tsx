@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { PlanetStatsData } from "../party/messages";
+import { PlanetStatsData } from "../../../party/messages";
 
 interface PlanetStatsProps {
     stats: PlanetStatsData | null;
@@ -34,12 +34,12 @@ export default function PlanetStats({ stats }: PlanetStatsProps) {
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Ressources</Text>
                 <View style={styles.row}>
-                    <Text style={styles.stat}>🚰 Eau: {stats.resources.eau}</Text>
-                    <Text style={styles.stat}>🍎 Graille: {stats.resources.nourriture} %</Text>
+                    <Text style={styles.stat}>🚰 Eau: {stats.resourceScore.eau}%</Text>
+                    <Text style={styles.stat}>🍎 Graille: {stats.resourceScore.nourriture}%</Text>
                 </View>
                 <View style={styles.row}>
-                    <Text style={styles.stat}>⚡ Énergie: {stats.resources.energie}</Text>
-                    <Text style={styles.stat}>💨 O2: {stats.resources.oxygene}</Text>
+                    <Text style={styles.stat}>⚡ Énergie: {stats.resourceScore.energie}%</Text>
+                    <Text style={styles.stat}>💨 O2: {stats.resourceScore.oxygene}%</Text>
                 </View>
                 <Text style={styles.score}>Score: {stats.resourceScore.global}%</Text>
             </View>

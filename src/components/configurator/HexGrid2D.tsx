@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { LayoutChangeEvent, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { clamp, useAnimatedStyle, useSharedValue, withDecay } from "react-native-reanimated";
 import { Polygon, Svg } from "react-native-svg";
-import { allBiomes, Biome } from "../../models/Biome";
+import { allBiomes, Biome } from "../../domain/Biome";
 import { BiomeData } from "../../party/messages";
 import {
     calculerDimensionsGrilleFromHexasphere,
@@ -32,21 +32,27 @@ interface HexGrid2DProps {
     cellSize?: number;
     maxVisibleHeight?: number;
     tileBiomes?: Record<number, BiomeData>;
+    disabled?: boolean;
+    assignedTiles?: number[] | null;
 }
 
 export default function HexGrid2D({
     selectedBiome,
     onCellPress,
-    cellSize = 20,
-    maxVisibleHeight = 300,
+    cellSize = 18,
+    maxVisibleHeight = 260,
     tileBiomes = {},
+    disabled = false,
+    assignedTiles = null,
 }: HexGrid2DProps) {
+
     const [grille, setGrille] = useState<(Biome | null)[][]>([]);
     const [dimensions, setDimensions] = useState<GridDimensions | null>(null);
     const [tileMapping, setTileMapping] = useState<Map<number, { x: number; y: number }>>(
         new Map()
     );
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+    const PADDING_HORIZONTAL = 10;
 
     const handleLayout = (event: LayoutChangeEvent) => {
         const { width, height } = event.nativeEvent.layout;
@@ -156,59 +162,83 @@ export default function HexGrid2D({
         });
     }, [tileBiomes, tileMapping]);
 
-    const handleCellPress = (x: number, y: number) => {
-
-        let tileIndex = -1;
+    // Map inversée pour trouver rapidement tileIndex depuis (x, y)
+    const positionToTileIndex = useMemo(() => {
+        const map = new Map<string, number>();
         tileMapping.forEach((pos, index) => {
-            if (pos.x === x && pos.y === y) {
-                tileIndex = index;
-            }
+            map.set(`${pos.x},${pos.y}`, index);
         });
+        return map;
+    }, [tileMapping]);
 
+    // Calculs de dimensions avec useMemo
+    const hexDimensions = useMemo(() => {
+        if (!dimensions) return null;
+
+        const hexRadius = cellSize;
+        const hexWidth = hexRadius * SQRT3;
+        const hexHeight = hexRadius * 2;
+        const horizSpacing = hexWidth;
+        const vertSpacing = hexHeight * 0.75;
+        const svgWidth = (dimensions.largeur) * horizSpacing + hexWidth / 2;
+        const svgHeight = (dimensions.hauteur - 1) * vertSpacing + hexHeight;
+        const visibleWidth = containerSize.width > 0 ? containerSize.width - (PADDING_HORIZONTAL * 2) : svgWidth;
+        const visibleHeight = containerSize.height > 0 ? containerSize.height : maxVisibleHeight;
+        const scrollableX = Math.max(0, svgWidth - visibleWidth);
+        const scrollableY = Math.max(0, svgHeight - visibleHeight);
+
+        return {
+            hexRadius,
+            hexWidth,
+            hexHeight,
+            horizSpacing,
+            vertSpacing,
+            svgWidth,
+            svgHeight,
+            visibleWidth,
+            visibleHeight,
+            scrollableX,
+            scrollableY,
+        };
+    }, [dimensions, containerSize.width, containerSize.height, cellSize, maxVisibleHeight]);
+
+    useEffect(() => {
+        if (!hexDimensions) return;
+        
+        minX.value = -hexDimensions.scrollableX;
+        minY.value = -hexDimensions.scrollableY;
+    }, [hexDimensions]);
+
+    const handleCellPress = useCallback((x: number, y: number) => {
+        if (disabled) {
+            return;
+        }
+
+        const tileIndex = positionToTileIndex.get(`${x},${y}`) ?? -1;
+
+        if (assignedTiles !== null && tileIndex >= 0 && !assignedTiles.includes(tileIndex)) {
+            return;
+        }
         
         if (tileIndex >= 0 && selectedBiome) {
-            
             const newGrille = grille.map((row) => [...row]);
             newGrille[y][x] = selectedBiome;
             setGrille(newGrille);
-
-            
             onCellPress?.(x, y, tileIndex);
         }
-    };
+    }, [disabled, positionToTileIndex, assignedTiles, selectedBiome, grille, onCellPress]);
 
-    if (!dimensions || grille.length === 0) {
+    if (!dimensions || grille.length === 0 || !hexDimensions) {
         return null;
     }
 
+    const { hexRadius, hexWidth, horizSpacing, vertSpacing, svgWidth, svgHeight } = hexDimensions;
 
-    const hexRadius = cellSize;
-    const hexWidth = hexRadius * SQRT3;
-    const hexHeight = hexRadius * 2;      
+    const emptyGesture = Gesture.Pan().enabled(false);
     
-
-    const horizSpacing = hexWidth;           
-    const vertSpacing = hexHeight * 0.75;    
-
-    
-    const svgWidth = (dimensions.largeur) * horizSpacing + hexWidth / 2;
-    const svgHeight = (dimensions.hauteur - 1) * vertSpacing + hexHeight;
-
-
-    const visibleWidth = containerSize.width > 0 ? containerSize.width : svgWidth;
-    const visibleHeight = containerSize.height > 0 ? containerSize.height : maxVisibleHeight;
-    
-
-    const scrollableX = Math.max(0, svgWidth - visibleWidth);
-    const scrollableY = Math.max(0, svgHeight - visibleHeight);
-    
-
-    minX.value = -scrollableX;
-    minY.value = -scrollableY;
-
     return (
         <View style={styles.container}>
-            <GestureDetector gesture={panGesture}>
+            <GestureDetector gesture={disabled ? emptyGesture : panGesture}>
                 <View 
                     style={[
                         styles.gridContainer, 
@@ -221,32 +251,39 @@ export default function HexGrid2D({
                             width={svgWidth}
                             height={svgHeight}
                         >
-                    {/* Dessiner tous les hexagones */}
+                    
                     {grille.map((row, y) =>
                         row.map((biome, x) => {
-                            
                             const offsetX = y % 2 === 1 ? hexWidth / 2 : 0;
                             const centerX = x * horizSpacing + hexWidth / 2 + offsetX;
                             const centerY = y * vertSpacing + hexRadius;
 
-                            
-                            const isTile = Array.from(tileMapping.values()).some(
-                                (pos) => pos.x === x && pos.y === y
-                            );
+                            const tileIndex = positionToTileIndex.get(`${x},${y}`) ?? -1;
+                            const isTile = tileIndex >= 0;
+                            const isAssigned = assignedTiles === null || (tileIndex >= 0 && assignedTiles.includes(tileIndex));
+                            const isAvailable = isTile && isAssigned;
+
+                            let fillColor = "#1a1a1a";
+                            if (biome) {
+                                fillColor = biome.couleur;
+                            } else if (isTile) {
+                                fillColor = isAssigned ? "#2a2a2a" : "#1a1a1a";
+                            }
 
                             return (
                                 <Polygon
                                     key={`${x}-${y}`}
                                     points={getHexagonPoints(centerX, centerY, hexRadius)}
-                                    fill={biome ? biome.couleur : isTile ? "#e8e8e8" : "#ffffff"}
-                                    stroke="#555"
+                                    fill={fillColor}
+                                    stroke="#fafafa"
                                     strokeWidth={1}
+                                    opacity={isAvailable ? 1 : 0.5}
                                 />
                             );
                         })
                     )}
                 </Svg>
-                {/* Overlay transparent pour gérer les touches */}
+
                 <View
                     style={[
                         StyleSheet.absoluteFill,
@@ -259,18 +296,15 @@ export default function HexGrid2D({
                 >
                     {grille.map((row, y) =>
                         row.map((biome, x) => {
-                            
+                            const tileIndex = positionToTileIndex.get(`${x},${y}`) ?? -1;
+                            if (tileIndex < 0) return null;
+
                             const offsetX = y % 2 === 1 ? hexWidth / 2 : 0;
                             const centerX = x * horizSpacing + hexWidth / 2 + offsetX;
                             const centerY = y * vertSpacing + hexRadius;
 
-                            // Vérifier si cette cellule correspond à une tuile
-                            const isTile = Array.from(tileMapping.values()).some(
-                                (pos) => pos.x === x && pos.y === y
-                            );
-
-                            if (!isTile) return null;
-
+                            const isAssigned = assignedTiles === null || assignedTiles.includes(tileIndex);
+                            const isDisabled = disabled || !isAssigned;
                             const touchSize = hexRadius * 1.5;
 
                             return (
@@ -283,9 +317,11 @@ export default function HexGrid2D({
                                         width: touchSize,
                                         height: touchSize,
                                         borderRadius: touchSize / 2,
+                                        opacity: isDisabled ? 0.3 : 1,
                                     }}
                                     onPress={() => handleCellPress(x, y)}
-                                    activeOpacity={0.7}
+                                    activeOpacity={isDisabled ? 1 : 0.7}
+                                    disabled={isDisabled}
                                 />
                             );
                         })
@@ -300,22 +336,10 @@ export default function HexGrid2D({
 
 const styles = StyleSheet.create({
     container: {
-        marginVertical: 20,
         alignItems: "center",
     },
     gridContainer: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 15,
-        width: "100%",
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 3.84,
-        elevation: 5,
+        width: "90%",
     },
 });
 

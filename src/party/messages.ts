@@ -81,13 +81,35 @@ export interface UsersMessage {
     }>;
 }
 
+// Message pour démarrer le jeu (envoyé par le host)
+export interface StartGameMessage {
+    type: 'START_GAME';
+}
+
+// Message d'assignation de tuiles (envoyé par le serveur à chaque client)
+export interface TileAssignmentMessage {
+    type: 'TILE_ASSIGNMENT';
+    assignedTiles: number[]; // Liste des indices de tuiles assignées à ce client
+    totalUsers: number; // Nombre total d'utilisateurs dans la room
+}
+
+// Message d'erreur de placement (envoyé par le serveur si placement non autorisé)
+export interface PlacementErrorMessage {
+    type: 'PLACEMENT_ERROR';
+    tileIndex: number;
+    message: string;
+}
+
 // tous les messages
 export type PartyMessage =
     | SetBiomeMessage
     | SyncStateMessage
     | ResetPlanetMessage
     | RoleMessage
-    | UsersMessage;
+    | UsersMessage
+    | StartGameMessage
+    | TileAssignmentMessage
+    | PlacementErrorMessage;
 
 // Type guard pour vérifier le type de message
 export function isSetBiomeMessage(msg: unknown): msg is SetBiomeMessage {
@@ -100,5 +122,17 @@ export function isSyncStateMessage(msg: unknown): msg is SyncStateMessage {
 
 export function isResetPlanetMessage(msg: unknown): msg is ResetPlanetMessage {
     return typeof msg === 'object' && msg !== null && (msg as ResetPlanetMessage).type === 'RESET_PLANET';
+}
+
+export function isStartGameMessage(msg: unknown): msg is StartGameMessage {
+    return typeof msg === 'object' && msg !== null && (msg as StartGameMessage).type === 'START_GAME';
+}
+
+export function isTileAssignmentMessage(msg: unknown): msg is TileAssignmentMessage {
+    return typeof msg === 'object' && msg !== null && (msg as TileAssignmentMessage).type === 'TILE_ASSIGNMENT';
+}
+
+export function isPlacementErrorMessage(msg: unknown): msg is PlacementErrorMessage {
+    return typeof msg === 'object' && msg !== null && (msg as PlacementErrorMessage).type === 'PLACEMENT_ERROR';
 }
 

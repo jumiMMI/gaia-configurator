@@ -52,13 +52,16 @@ export class Biome {
 // Légende des valeurs :
 // ++  = +10  |  +  = +5  |  0 = 0  |  -  = -5  |  --  = -10
 
-//              
-export const foret = new Biome('Forêt', '#2d5016', 'assets/biomes/foret/ForetTest.glb', -5, +10, -10, -5, +5, +10, 0, +10);
-export const ocean = new Biome('Océan', '#1e3a8a', 'assets/biomes/foret/ForetTest.glb', 0, +15, -5, -5, +15, +5, +5, +5);
-export const prairie = new Biome('Prairie', '#84cc16', 'assets/biomes/foret/ForetTest.glb', 0, +5, -5, +5, +5, +10, 0, +5);
-export const desert = new Biome('Désert', '#d4a574', 'assets/biomes/foret/ForetTest.glb', +15, -15, 0, +10, -5, -5, +10, -5);
+// Biomes (température, humidité, CO2, lumière, eau, nourriture, énergie, oxygène)
+export const foret = new Biome('Forêt', '#2d5016', 'assets/biomes/foret/ForetTest.glb', -2, +10, -3, -3, +5, +10, 0, +10);
+export const ocean = new Biome('Océan', '#1e3a8a', 'assets/biomes/foret/ForetTest.glb', 0, +15, -2, -2, +15, +5, +5, +5);
+export const prairie = new Biome('Prairie', '#84cc16', 'assets/biomes/foret/ForetTest.glb', +1, +5, -1, +2, +5, +10, 0, +5);
+export const desert = new Biome('Désert', '#d4a574', 'assets/biomes/desert.glb', +15, -15, +1, +10, -5, -5, +10, -5);
+export const volcan = new Biome('Volcan', '#8b0000', 'assets/models/volcano.glb', +20, -20, +15, +8, -10, -10, +20, -10);
+export const glacier = new Biome('Glacier', '#e0f2fe', 'assets/models/glacier.glb', -20, +5, -2, +5, +15, -10, -5, +5);
+export const montagne = new Biome('Montagne', '#6b7280', 'assets/models/montagne.glb', -5, 0, 0, 0, 0, 0, 0, 0);
 
-export const allBiomes = [foret, ocean, prairie, desert];
+export const allBiomes = [foret, ocean, prairie, desert, volcan, glacier, montagne];
 
 export const biomeMap = new Map<string, Biome>(
     allBiomes.map(biome => [biome.nom, biome])

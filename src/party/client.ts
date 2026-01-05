@@ -2,12 +2,18 @@ import PartySocket from "partysocket";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BiomeData,
-  PlanetStatsData,
-  ResetPlanetMessage,
-  SetBiomeMessage,
+  isPlacementErrorMessage,
   isResetPlanetMessage,
   isSetBiomeMessage,
-  isSyncStateMessage
+  isStartGameMessage,
+  isSyncStateMessage,
+  isTileAssignmentMessage,
+  PlanetStatsData,
+  ResetPlanetMessage,
+  RoleMessage,
+  SetBiomeMessage,
+  StartGameMessage,
+  UsersMessage
 } from "./messages";
 
 export function createPartyClient(room: string, host: string) {
@@ -18,28 +24,40 @@ export function createPartyClient(room: string, host: string) {
 }
 
 // Configuration PartyKit
-const PARTYKIT_HOST = process.env.EXPO_PUBLIC_PARTYKIT_HOST || "10.137.96.222:1999";
+const PARTYKIT_HOST = process.env.EXPO_PUBLIC_PARTYKIT_HOST || "192.168.1.189:1999";
 
 interface UsePlanetSyncOptions {
   room: string;
   onBiomeUpdate?: (tileIndex: number, biome: BiomeData) => void;
+  canSendUpdate?: () => boolean; 
+  onPlacementError?: (tileIndex: number, message: string) => void;
+  onGameStart?: () => void; // Callback appelé quand le jeu démarre (message START_GAME reçu)
 }
 
 interface UsePlanetSyncReturn {
   tileBiomes: Record<number, BiomeData>;
   sendBiomeUpdate: (tileIndex: number, biome: BiomeData) => void;
   resetPlanet: () => void;
+  startGame: () => void; 
   isConnected: boolean;
   stats: PlanetStatsData | null;
+  assignedTiles: number[] | null; 
+  isHost: boolean;
+  users: Array<{ id: string; name: string; isHost: boolean }>; 
+  totalUsers: number;
 }
 
 /**
  * Hook pour synchroniser l'état de la planète via PartyKit
  */
-export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): UsePlanetSyncReturn {
+export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementError, onGameStart }: UsePlanetSyncOptions): UsePlanetSyncReturn {
   const [tileBiomes, setTileBiomes] = useState<Record<number, BiomeData>>({});
   const [isConnected, setIsConnected] = useState(false);
   const [planetStats, setPlanetStats] = useState<PlanetStatsData | null>(null);
+  const [assignedTiles, setAssignedTiles] = useState<number[] | null>(null);
+  const [isHost, setIsHost] = useState(false);
+  const [users, setUsers] = useState<Array<{ id: string; name: string; isHost: boolean }>>([]);
+  const [totalUsers, setTotalUsers] = useState(0);
   const socketRef = useRef<PartySocket | null>(null);
 
   useEffect(() => {
@@ -52,12 +70,10 @@ export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): Us
     socketRef.current = socket;
 
     socket.onopen = () => {
-      console.log(`[PartyKit] Connecté à la room: ${room}`);
       setIsConnected(true);
     };
 
     socket.onclose = () => {
-      console.log(`[PartyKit] Déconnecté de la room: ${room}`);
       setIsConnected(false);
     };
 
@@ -67,7 +83,6 @@ export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): Us
 
         // Réception de l'état complet (à la connexion)
         if (isSyncStateMessage(data)) {
-          console.log(`[PartyKit] SYNC_STATE reçu:`, Object.keys(data.tileBiomes).length, "tuiles");
           setTileBiomes(data.tileBiomes);
           if (data.stats) {
             setPlanetStats(data.stats);
@@ -93,9 +108,45 @@ export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): Us
         if (isResetPlanetMessage(data)) {
           console.log(`[PartyKit] RESET_PLANET reçu`);
           setTileBiomes({});
+          setAssignedTiles(null);
           if (data.stats) {
             setPlanetStats(data.stats);
           }
+          return;
+        }
+
+        // Réception du rôle (host ou non)
+        if (data.type === 'role') {
+          const roleMsg = data as RoleMessage;
+          setIsHost(roleMsg.isHost);
+          return;
+        }
+
+        // Réception de la liste des utilisateurs
+        if (data.type === 'users') {
+          const usersMsg = data as UsersMessage;
+          setUsers(usersMsg.users);
+          setTotalUsers(usersMsg.users.length);
+          return;
+        }
+
+        // Réception de l'assignation de tuiles
+        if (isTileAssignmentMessage(data)) {
+          setAssignedTiles(data.assignedTiles);
+          setTotalUsers(data.totalUsers);
+          return;
+        }
+
+        // Réception d'une erreur de placement
+        if (isPlacementErrorMessage(data)) {
+          console.warn(`[PartyKit] Erreur de placement: ${data.message} (tuile ${data.tileIndex})`);
+          onPlacementError?.(data.tileIndex, data.message);
+          return;
+        }
+
+        // Réception du signal de démarrage du jeu
+        if (isStartGameMessage(data)) {
+          onGameStart?.();
           return;
         }
       } catch {
@@ -108,11 +159,15 @@ export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): Us
       socket.close();
       socketRef.current = null;
     };
-  }, [room, onBiomeUpdate]);
+  }, [room, onBiomeUpdate, onPlacementError, onGameStart]);
 
   const sendBiomeUpdate = useCallback((tileIndex: number, biome: BiomeData) => {
+    if (canSendUpdate && !canSendUpdate()) {
+      // console.warn("[PartyKit] Placement de biomes désactivé (jeu terminé)");
+      return;
+    }
+
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-      console.warn("[PartyKit] Impossible d'envoyer: non connecté");
       return;
     }
 
@@ -123,18 +178,18 @@ export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): Us
     };
 
     socketRef.current.send(JSON.stringify(message));
-    console.log(`[PartyKit] SET_BIOME envoyé: tuile ${tileIndex} → ${biome.nom}`);
+    // console.log(`[PartyKit] SET_BIOME envoyé: tuile ${tileIndex} → ${biome.nom}`);
 
     setTileBiomes((prev) => ({
       ...prev,
       [tileIndex]: biome,
     }));
-  }, []);
+  }, [canSendUpdate]);
 
 
   const resetPlanet = useCallback(() => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-      console.warn("[PartyKit] Impossible d'envoyer: non connecté");
+      // console.warn("[PartyKit] Impossible d'envoyer: non connecté");
       return;
     }
 
@@ -143,14 +198,35 @@ export function usePlanetSync({ room, onBiomeUpdate }: UsePlanetSyncOptions): Us
     };
 
     socketRef.current.send(JSON.stringify(message));
-    console.log(`[PartyKit] RESET_PLANET envoyé`);
+
   }, []);
+
+  const startGame = useCallback(() => {
+    if (!isHost) {
+      return;
+    }
+
+    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    const message: StartGameMessage = {
+      type: 'START_GAME',
+    };
+
+    socketRef.current.send(JSON.stringify(message));
+  }, [isHost]);
 
   return {
     tileBiomes,
     sendBiomeUpdate,
     resetPlanet,
+    startGame,
     isConnected,
     stats: planetStats,
+    assignedTiles,
+    isHost,
+    users,
+    totalUsers,
   };
 }
