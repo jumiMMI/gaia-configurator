@@ -1,11 +1,11 @@
 import { useEffect } from "react";
-import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
     withTiming
 } from "react-native-reanimated";
-import { Polygon, Svg } from "react-native-svg";
+import { Defs, LinearGradient, Polygon, Rect, Stop, Svg } from "react-native-svg";
 import { Biome, allBiomes } from "../../domain/Biome";
 
 interface BiomeSelectorProps {
@@ -51,9 +51,9 @@ export default function BiomeSelector({
         opacity: opacity.value * 0.5,
     }));
 
-    const HEX_RADIUS = 30;
+    const HEX_RADIUS = 32;
     const HEX_SIZE = HEX_RADIUS * 2;
-    const VERTICAL_SPACING = 105;
+    const VERTICAL_SPACING = 115;
     const HORIZONTAL_SPACING = 70;
     const VERTICAL_OFFSET = VERTICAL_SPACING * 0.375; 
 
@@ -74,20 +74,59 @@ export default function BiomeSelector({
                 style={[styles.hexagonContainer, { marginBottom }]}
             >
                 <Svg width={HEX_SIZE} height={HEX_SIZE}>
+                    <Defs>
+                        <LinearGradient id="hexGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <Stop offset="0%" stopColor="#f5f5f5" stopOpacity="1" />
+                            <Stop offset="100%" stopColor="#e0e0e0" stopOpacity="1" />
+                        </LinearGradient>
+                    </Defs>
                     <Polygon
                         points={getHexagonPoints(centerX, centerY, HEX_RADIUS)}
-                        fill={biome.couleur}
+                        fill="url(#hexGradient)"
                         stroke="#333"
                         strokeWidth={2}
                     />
                 </Svg>
+                {biome.icon && (
+                    <View style={styles.iconContainer}>
+                        <Image
+                            source={biome.icon}
+                            style={styles.icon}
+                            resizeMode="contain"
+                        />
+                    </View>
+                )}
             </TouchableOpacity>
         );
     };
 
     return (
         <View style={styles.container}>
-            <View style={styles.biomeGrid}>
+            <View style={styles.biomeGridWrapper}>
+                {/* Cercle d'ombre (derrière) */}
+                <View style={styles.shadowCircle}>
+                    <Svg style={StyleSheet.absoluteFill} viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <Defs>
+                            <LinearGradient id="shadowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <Stop offset="0%" stopColor="#d0d0d0" stopOpacity="0.6" />
+                                <Stop offset="100%" stopColor="#b0b0b0" stopOpacity="0.6" />
+                            </LinearGradient>
+                        </Defs>
+                        <Rect width="100" height="100" fill="url(#shadowGradient)" />
+                    </Svg>
+                </View>
+                {/* Cercle principal (devant) */}
+                <View style={styles.biomeGridContainer}>
+                    <Svg style={StyleSheet.absoluteFill} viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <Defs>
+                            <LinearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <Stop offset="0%" stopColor="#efefef" stopOpacity="1" />
+                                <Stop offset="100%" stopColor="#f3f3f3" stopOpacity="1" />
+                        </LinearGradient>
+                    </Defs>
+                    <Rect width="100" height="100" fill="url(#bgGradient)" />
+                </Svg>
+                <View style={styles.biomeGrid}>
                 {/* Colonne 0 (gauche) */}
                 <View style={[styles.column, { marginTop: VERTICAL_OFFSET, marginRight: HORIZONTAL_SPACING - HEX_SIZE }]}>
                     {column0.map((biome, index) => 
@@ -108,6 +147,8 @@ export default function BiomeSelector({
                         renderHexagon(biome, `col2-${index}-${biome.nom}`, index === column2.length - 1)
                     )}
                 </View>
+                </View>
+            </View>
             </View>
 
             {/* Modal avec overlay pour fermer les détails */}
@@ -153,27 +194,39 @@ export default function BiomeSelector({
 
 const styles = StyleSheet.create({
     container: {
-        // padding: 20,
         marginTop: 10,
+        marginLeft: 10,
+
         width: "100%",
-        // margin: 10,
     },
-    title: {
-        fontSize: 20,
-        fontWeight: "bold",
-        marginBottom: 15,
-        textAlign: "center",
-        color: "#333",
+    biomeGridWrapper: {
+        width: "73%",
+        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    shadowCircle: {
+        position: 'absolute',
+        width: "112%",
+        aspectRatio: 1,
+        borderRadius: 200,
+        overflow: 'hidden',
+        zIndex: 0,
+    },
+    biomeGridContainer: {
+        width: "100%",
+        aspectRatio: 1,
+        borderRadius: 200,
+        overflow: 'hidden',
+        position: 'relative',
+        zIndex: 1,
     },
     biomeGrid: {
-        backgroundColor: "#fff",
-        borderRadius: 200,
-        width: "70%",
+        position: 'relative',
         flexDirection: 'row',
         justifyContent: 'center',
-        // alignItems: 'flex-start',
-        paddingBottom: 30,
-        paddingTop: 30,
+        paddingBottom: 10,
+        paddingTop: 10,
         paddingLeft: 0,
         paddingRight: 0,
     },
@@ -182,24 +235,22 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     hexagonContainer: {
-        width: 60,
-        height: 60,
+        width: 65,
+        height: 65,
+        position: "relative",
     },
-    // biomeCard: {
-    //     flex: 1,
-    //     backgroundColor: "#f5f5f5",
-    //     borderRadius: 8,
-    //     padding: 10,
-    //     alignItems: "center",
-    //     borderWidth: 2,
-    //     borderColor: "transparent",
-    //     minWidth: 60,
-    //     marginHorizontal: 5,
-    // },
-    // biomeCardSelected: {
-    //     borderColor: "#007AFF",
-    //     backgroundColor: "#e3f2fd",
-    // },
+    iconContainer: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    icon: {
+        // Utiliser la taille native de l'icône, pas de redimensionnement
+    },
     colorIndicator: {
         width: 40,
         height: 40,

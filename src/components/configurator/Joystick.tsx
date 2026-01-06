@@ -5,7 +5,7 @@ interface JoystickProps {
     size?: number;
 }
 
-export default function Joystick({ size = 80 }: JoystickProps) {
+export default function Joystick({ size = 115 }: JoystickProps) {
     const radius = size / 2;
 
     return (

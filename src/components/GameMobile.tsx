@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useGameTimer } from "../contexts/GameTimerContext";
 import { Biome } from "../domain/Biome";
 import { usePlanetSync } from "../party/client";
@@ -32,20 +32,15 @@ export default function GameMobile({ roomName }: GameMobileProps) {
     totalUsers,
   } = usePlanetSync({
     room: roomName,
-    canSendUpdate: () => !isGameFinished, // Bloquer les envois si le jeu est terminé
+    canSendUpdate: () => !isGameFinished,
     onPlacementError: (tileIndex, message) => {
       Alert.alert("Placement non autorisé", message);
     },
     onGameStart: () => {
-      // Déclencher le timer quand le message START_GAME est reçu du serveur
       startTimer();
     },
   });
 
-  // Quand le timer démarre, envoyer START_GAME au serveur si on est host
-  useEffect(() => {
-    // Cette logique sera déclenchée depuis le bouton "Jouer à Gaia"
-  }, []);
 
 
   const usedTilesCount = Object.keys(tileBiomes).length;
@@ -84,7 +79,6 @@ export default function GameMobile({ roomName }: GameMobileProps) {
   const handleStartGame = () => {
     if (isHost) {
       startGameServer();
-      // Le timer sera déclenché via le callback onGameStart quand le serveur diffusera START_GAME
     }
   };
 
@@ -96,7 +90,7 @@ export default function GameMobile({ roomName }: GameMobileProps) {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <View style={styles.container}>
 
       {isGameFinished && (
         <View style={styles.gameFinishedBanner}>
@@ -111,7 +105,6 @@ export default function GameMobile({ roomName }: GameMobileProps) {
       )}
 
       <View style={styles.gameZoneContainer}>
-
         <View style={styles.gameZone}>
         {/* Timer */}
         <View style={styles.timerContainer}>
@@ -148,30 +141,32 @@ export default function GameMobile({ roomName }: GameMobileProps) {
       </View>
 
       <View style={styles.bottomContainer}>
-        <View style={styles.connectionStatus}>
-          <View style={[styles.statusDot, { backgroundColor: isConnected ? '#22c55e' : '#ef4444' }]} />
-          <Text style={styles.statusText}>
-            {isConnected ? 'Connecté au serveur' : 'Déconnecté'}
-          </Text>
-        </View>
+        <View style={styles.bottomContainerInner}>
+          <View style={styles.connectionStatus}>
+            <View style={[styles.statusDot, { backgroundColor: isConnected ? '#22c55e' : '#ef4444' }]} />
+            <Text style={styles.statusText}>
+              {isConnected ? 'Connecté au serveur' : 'Déconnecté'}
+            </Text>
+          </View>
 
-        <View style={styles.controlsContainer}>
-          <BiomeSelector
-            selectedBiome={selectedBiome}
-            onBiomeSelect={handleBiomeSelect}
-            showDetails={showDetails}
-            onCloseDetails={handleCloseDetails}
-          />
+          <View style={styles.controlsContainer}>
+            <BiomeSelector
+              selectedBiome={selectedBiome}
+              onBiomeSelect={handleBiomeSelect}
+              showDetails={showDetails}
+              onCloseDetails={handleCloseDetails}
+            />
 
-          <View style={styles.actionRow}>
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.finishButton}>
-                {/* Bouton vide pour l'instant */}
-              </TouchableOpacity>
-              <Text style={styles.finishButtonText}>terminer</Text>
+            <View style={styles.actionRow}>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.finishButton}>
+                  {/* Bouton vide pour l'instant */}
+                </TouchableOpacity>
+                <Text style={styles.finishButtonText}>terminer</Text>
+              </View>
+
+              <Joystick />
             </View>
-
-            <Joystick />
           </View>
         </View>
       </View>
@@ -181,18 +176,27 @@ export default function GameMobile({ roomName }: GameMobileProps) {
           <Text>🔄 Réinitialiser la planète</Text>
         </TouchableOpacity>
       )}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#D9D9D9",
+    height: "100%",
   },
-  contentContainer: {
-    padding: 0,
-    paddingBottom: 40,
+  gameZoneContainer: {
+    backgroundColor: "#fff",
+    marginBottom: 12,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    borderBottomLeftRadius: 15,
+    borderBottomRightRadius: 15,
+    overflow: 'hidden',
+    borderColor: "white",
+    borderWidth: 2,
+    padding: 8,
   },
   title: {
     fontSize: 28,
@@ -227,20 +231,29 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   bottomContainer: {
-    paddingHorizontal: 10,
+    flex: 1,
+    paddingHorizontal: 20,
+    backgroundColor: "#DDDDDD",
+    borderTopWidth: 1,
+    borderTopColor: "#bcbcbc",
+  },
+  bottomContainerInner: {
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255, 255, 255, 0.2)",
+    paddingTop: 5,
   },
   controlsContainer: {
     width: "100%",
   },
   actionRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     justifyContent: "space-between",
     paddingHorizontal: 20,
   },
   buttonContainer: {
-    marginTop: 20,
     alignItems: "center",
+    marginBottom: 10,
   },
   finishButton: {
     width: 60,
@@ -314,18 +327,6 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 16,
     fontWeight: "bold",
-  },
-  gameZoneContainer: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    borderBottomLeftRadius: 15,
-    borderBottomRightRadius: 15,
-    marginBottom: 20,
-    overflow: 'hidden',
-    borderColor: "white",
-    borderWidth: 2,
-    padding: 8,
   },
   gameZone: {
     backgroundColor: "#000",
