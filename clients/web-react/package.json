@@ -1,0 +1,39 @@
+{
+  "name": "@gaia/web-react",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+  },
+  "dependencies": {
+    "@gaia/shared": "*",
+    "event-target-polyfill": "^0.0.4",
+    "event-target-shim": "^6.0.2",
+    "hexasphere.js": "^0.2.2",
+    "lil-gui": "^0.21.0",
+    "partysocket": "^1.1.6",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-native-get-random-values": "^1.11.0",
+    "react-router-dom": "^6.28.0",
+    "simplex-noise": "^4.0.3",
+    "three": "^0.166.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@types/three": "^0.166.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^9.25.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "typescript": "^5.9.2",
+    "vite": "^6.0.0",
+    "vite-plugin-commonjs": "^0.10.4"
+  }
+}

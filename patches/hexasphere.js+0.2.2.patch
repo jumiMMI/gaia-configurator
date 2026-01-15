@@ -1,0 +1,18 @@
+diff --git a/node_modules/hexasphere.js/src/tile.js b/node_modules/hexasphere.js/src/tile.js
+index aacb9d4..bc2708a 100644
+--- a/node_modules/hexasphere.js/src/tile.js
++++ b/node_modules/hexasphere.js/src/tile.js
+@@ -17,10 +17,10 @@ function vector(p1, p2){
+ // Set Normal.z to (multiply U.x by V.y) minus (multiply U.y by V.x)
+ function calculateSurfaceNormal(p1, p2, p3){
+ 
+-    U = vector(p1, p2)
+-    V = vector(p1, p3)
++    var U = vector(p1, p2);
++    var V = vector(p1, p3);
+     
+-    N = {
++    var N = {
+         x: U.y * V.z - U.z * V.y,
+         y: U.z * V.x - U.x * V.z,
+         z: U.x * V.y - U.y * V.x

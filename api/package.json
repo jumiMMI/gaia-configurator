@@ -1,0 +1,18 @@
+{
+  "name": "@gaia/api",
+  "version": "1.0.0",
+  "main": "party/server.ts",
+  "scripts": {
+    "dev": "partykit dev",
+    "deploy": "partykit deploy"
+  },
+  "dependencies": {
+    "@gaia/shared": "file:../packages/shared",
+    "hexasphere.js": "^0.2.2",
+    "partykit": "^0.0.115"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.28",
+    "typescript": "^5.9.2"
+  }
+}

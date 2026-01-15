@@ -1,50 +1,109 @@
-# Welcome to your Expo app 👋
+# Gaia Configurator - Monorepo
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Structure monorepo pour le projet Gaia Configurator avec séparation des clients (mobile/web) et de l'API.
 
-## Get started
+## Structure
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+gaia-configurator/
+├── packages/
+│   └── shared/          # Code partagé entre tous les projets
+│       ├── package.json
+│       └── src/
+│           ├── domain/      # Biome, PlanetState
+│           ├── party/       # messages.ts
+│           ├── utils/       # hexasphereUtils.ts
+│           ├── config/      # planetConfig.ts
+│           └── types/       # hexasphere.d.ts
+│
+├── clients/
+│   ├── mobile/          # Application mobile (React Native/Expo)
+│   │   ├── package.json
+│   │   ├── app/         # Routes Expo Router
+│   │   └── src/
+│   │       ├── components/
+│   │       ├── contexts/
+│   │       ├── party/   # client.ts (spécifique au client)
+│   │       └── utils/   # clientId.ts (spécifique au client)
+│   │
+│   └── web/             # Application web (React/Expo Web)
+│       ├── package.json
+│       ├── app/         # Routes Expo Router
+│       └── src/
+│           ├── components/
+│           ├── contexts/
+│           ├── party/   # client.ts (spécifique au client)
+│           └── utils/  # clientId.ts (spécifique au client)
+│
+└── api/                 # Serveur PartyKit
+    ├── package.json
+    └── party/
+        └── server.ts
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Installation
 
-## Learn more
+À la racine du projet :
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npm install
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Cela installera toutes les dépendances pour tous les workspaces.
 
-## Join the community
+## Utilisation
 
-Join our community of developers creating universal apps.
+### Démarrer l'application mobile
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npm run start:mobile
+# ou
+cd clients/mobile && npm start
+```
+
+### Démarrer l'application web
+
+```bash
+npm run start:web
+# ou
+cd clients/web && npm start
+```
+
+### Démarrer l'API (serveur PartyKit)
+
+```bash
+npm run dev:api
+# ou
+cd api && npm run dev
+```
+
+## Imports
+
+### Depuis `@gaia/shared`
+
+Tous les fichiers partagés peuvent être importés depuis `@gaia/shared` :
+
+```typescript
+import { Biome, PlanetState, BiomeData, getDefaultHexasphereData } from "@gaia/shared";
+```
+
+### Chemins relatifs
+
+Pour les fichiers spécifiques à chaque client, utilisez les chemins relatifs :
+
+```typescript
+// Dans clients/mobile/src/components/GameMobile.tsx
+import { usePlanetSync } from "../party/client";
+import { biomeIcons } from "../domain/biomeIcons";
+```
+
+## Workspaces
+
+Le projet utilise npm workspaces pour gérer les dépendances :
+
+- `packages/shared` : Code partagé (Biome, PlanetState, messages, utils)
+- `clients/mobile` : Application mobile
+- `clients/web` : Application web
+- `api` : Serveur PartyKit
+
+Chaque workspace a son propre `package.json` avec ses dépendances spécifiques.

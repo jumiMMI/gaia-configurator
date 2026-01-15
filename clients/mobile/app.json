@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "gaia-configurator",
+    "slug": "gaia-configurator",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/2d-icons/Forest.png",
+    "scheme": "gaiaconfigurator",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+          "foregroundImage": "./assets/2d-icons/Forest.png",
+          "backgroundImage": "./assets/2d-icons/Forest.png",
+          "monochromeImage": "./assets/2d-icons/Forest.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/2d-icons/Forest.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
