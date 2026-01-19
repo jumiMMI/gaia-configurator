@@ -66,7 +66,6 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
   useEffect(() => {
     let mounted = true;
     
-    // Récupérer ou créer l'ID client persistant
     const initClientId = async () => {
       const clientId = await getOrCreateClientId();
       if (mounted) {
@@ -86,12 +85,10 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
     socket.onopen = async () => {
       setIsConnected(true);
       
-      // S'assurer qu'on a l'ID client
       if (!clientIdRef.current) {
         clientIdRef.current = await getOrCreateClientId();
       }
       
-      // Envoyer le type de client (web ou mobile) au serveur avec l'ID persistant
       const isWeb = Platform.OS === 'web' || typeof window !== 'undefined';
       const clientType = isWeb ? 'web' : 'mobile';
       
@@ -197,7 +194,6 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
 
   const sendBiomeUpdate = useCallback((tileIndex: number, biome: BiomeData) => {
     if (canSendUpdate && !canSendUpdate()) {
-      // console.warn("[PartyKit] Placement de biomes désactivé (jeu terminé)");
       return;
     }
 

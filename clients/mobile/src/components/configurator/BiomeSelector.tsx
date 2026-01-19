@@ -3,7 +3,7 @@ import * as Haptics from "expo-haptics";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import Animated, { useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
-import { Defs, LinearGradient, Polygon, Rect, Stop, Svg } from "react-native-svg";
+import { Defs, LinearGradient, Polygon, RadialGradient, Rect, Stop, Svg } from "react-native-svg";
 import { biomeIcons } from "../../domain/biomeIcons";
 
 const AnimatedPolygon = Animated.createAnimatedComponent(Polygon);
@@ -37,13 +37,13 @@ function getHexagonPoints(cx: number, cy: number, radius: number): string {
 const HEX_RADIUS = 32;
 const HEX_SIZE = HEX_RADIUS * 2;
 
-function AnimatedHexagon({ 
-    biome, 
-    isPressed, 
-    onPress, 
-    onPressIn, 
-    onPressOut, 
-    marginBottom 
+function AnimatedHexagon({
+    biome,
+    isPressed,
+    onPress,
+    onPressIn,
+    onPressOut,
+    marginBottom
 }: AnimatedHexagonProps) {
     const strokeWidth = useSharedValue(2);
 
@@ -68,13 +68,23 @@ function AnimatedHexagon({
             activeOpacity={1}
             style={[styles.hexagonContainer, { marginBottom }]}
         >
-            <Svg width={HEX_SIZE} height={HEX_SIZE}>
+            <Svg width={HEX_SIZE} height={HEX_SIZE} style={styles.hexagonSvg}>
                 <Defs>
+                    <RadialGradient id={`hexShadowGradient-${biome.nom}`} cx="50%" cy="50%" r="50%">
+                        <Stop offset="0%" stopColor="#000000" stopOpacity="0.15" />
+                        <Stop offset="70%" stopColor="#000000" stopOpacity="0.08" />
+                        <Stop offset="100%" stopColor="#000000" stopOpacity="0" />
+                    </RadialGradient>
                     <LinearGradient id={`hexGradient-${biome.nom}`} x1="0%" y1="0%" x2="0%" y2="100%">
                         <Stop offset="0%" stopColor="#f5f5f5" stopOpacity="1" />
                         <Stop offset="100%" stopColor="#e0e0e0" stopOpacity="1" />
                     </LinearGradient>
                 </Defs>
+                {/* Gradient radial en arrière-plan pour l'effet d'ombre */}
+                <AnimatedPolygon
+                    points={getHexagonPoints(centerX, centerY, HEX_RADIUS + 2)}
+                    fill={`url(#hexShadowGradient-${biome.nom})`}
+                />
                 <AnimatedPolygon
                     points={getHexagonPoints(centerX, centerY, HEX_RADIUS)}
                     fill={`url(#hexGradient-${biome.nom})`}
@@ -97,8 +107,8 @@ function AnimatedHexagon({
     );
 }
 
-export default function BiomeSelector({ 
-    selectedBiome, 
+export default function BiomeSelector({
+    selectedBiome,
     onBiomeSelect,
 }: BiomeSelectorProps) {
     const [pressedBiome, setPressedBiome] = useState<Biome | null>(null);
@@ -122,11 +132,11 @@ export default function BiomeSelector({
 
     const VERTICAL_SPACING = 115;
     const HORIZONTAL_SPACING = 70;
-    const VERTICAL_OFFSET = VERTICAL_SPACING * 0.375; 
+    const VERTICAL_OFFSET = VERTICAL_SPACING * 0.375;
 
     const column0 = [allBiomes[0], allBiomes[3]];
     const column1 = [allBiomes[1], allBiomes[4], allBiomes[6]];
-    const column2 = [allBiomes[2], allBiomes[5]]; 
+    const column2 = [allBiomes[2], allBiomes[5]];
 
     const renderHexagon = (biome: Biome, key: string, isLast: boolean = false) => {
         const marginBottom = isLast ? 0 : VERTICAL_SPACING * 0.75 - HEX_SIZE;
@@ -165,32 +175,32 @@ export default function BiomeSelector({
                             <LinearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                                 <Stop offset="0%" stopColor="#efefef" stopOpacity="1" />
                                 <Stop offset="100%" stopColor="#f3f3f3" stopOpacity="1" />
-                        </LinearGradient>
-                    </Defs>
-                    <Rect width="100" height="100" fill="url(#bgGradient)" />
-                </Svg>
-                <View style={styles.biomeGrid}>
-                <View style={[styles.column, { marginTop: VERTICAL_OFFSET, marginRight: HORIZONTAL_SPACING - HEX_SIZE }]}>
-                    {column0.map((biome, index) => 
-                        renderHexagon(biome, `col0-${index}-${biome.nom}`, index === column0.length - 1)
-                    )}
-                </View>
+                            </LinearGradient>
+                        </Defs>
+                        <Rect width="100" height="100" fill="url(#bgGradient)" />
+                    </Svg>
+                    <View style={styles.biomeGrid}>
+                        <View style={[styles.column, { marginTop: VERTICAL_OFFSET, marginRight: HORIZONTAL_SPACING - HEX_SIZE }]}>
+                            {column0.map((biome, index) =>
+                                renderHexagon(biome, `col0-${index}-${biome.nom}`, index === column0.length - 1)
+                            )}
+                        </View>
 
 
-                <View style={[styles.column, { marginRight: HORIZONTAL_SPACING - HEX_SIZE }]}>
-                    {column1.map((biome, index) => 
-                        renderHexagon(biome, `col1-${index}-${biome.nom}`, index === column1.length - 1)
-                    )}
-                </View>
+                        <View style={[styles.column, { marginRight: HORIZONTAL_SPACING - HEX_SIZE }]}>
+                            {column1.map((biome, index) =>
+                                renderHexagon(biome, `col1-${index}-${biome.nom}`, index === column1.length - 1)
+                            )}
+                        </View>
 
 
-                <View style={[styles.column, { marginTop: VERTICAL_OFFSET }]}>
-                    {column2.map((biome, index) => 
-                        renderHexagon(biome, `col2-${index}-${biome.nom}`, index === column2.length - 1)
-                    )}
+                        <View style={[styles.column, { marginTop: VERTICAL_OFFSET }]}>
+                            {column2.map((biome, index) =>
+                                renderHexagon(biome, `col2-${index}-${biome.nom}`, index === column2.length - 1)
+                            )}
+                        </View>
+                    </View>
                 </View>
-                </View>
-            </View>
             </View>
         </View>
     );
@@ -224,6 +234,14 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         position: 'relative',
         zIndex: 1,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 20,
+            height: 2,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 1,
+        elevation: 8,
     },
     biomeGrid: {
         position: 'relative',
@@ -242,6 +260,17 @@ const styles = StyleSheet.create({
         width: 65,
         height: 65,
         position: "relative",
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 1,
+        elevation: 5,
+    },
+    hexagonSvg: {
+        // Assure que le SVG respecte les ombres du container
     },
     iconContainer: {
         position: "absolute",

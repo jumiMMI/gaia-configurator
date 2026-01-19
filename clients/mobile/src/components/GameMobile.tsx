@@ -1,7 +1,7 @@
 import { Biome, getDefaultHexasphereData } from "@gaia/shared";
 import * as Haptics from "expo-haptics";
 import { useEffect, useState } from "react";
-import { Alert, LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useGameTimer } from "../contexts/GameTimerContext";
 import { usePlanetSync } from "../party/client";
@@ -210,6 +210,19 @@ export default function GameMobile({ roomName }: GameMobileProps) {
             </Text>
           </View>
 
+          <View style={styles.dotsContainer}>
+            <Image 
+              source={require("../../assets/2d-icons/dots-remote.png")} 
+              style={styles.dotImage}
+              resizeMode="contain"
+            />
+            <Image 
+              source={require("../../assets/2d-icons/dots-remote.png")} 
+              style={[styles.dotImage, styles.dotImageFlipped]}
+              resizeMode="contain"
+            />
+          </View>
+
           <View style={styles.controlsContainer}>
             <BiomeSelector
               selectedBiome={selectedBiome}
@@ -218,7 +231,6 @@ export default function GameMobile({ roomName }: GameMobileProps) {
 
             <View style={styles.actionRow}>
               <View style={styles.buttonContainer}>
-                {/* Ombre du bouton (en arrière-plan) */}
                 <View style={styles.finishButtonShadow} pointerEvents="none" />
                 <TouchableOpacity
                   style={styles.finishButton}
@@ -227,7 +239,7 @@ export default function GameMobile({ roomName }: GameMobileProps) {
                   onPressOut={handleFinishButtonRelease}
                 >
                   <Animated.View style={[styles.finishButtonInner, finishButtonAnimatedStyle]}>
-                    {/* Bouton vide pour l'instant */}
+             
                   </Animated.View>
                 </TouchableOpacity>
                 <Text style={styles.finishButtonText}>terminer</Text>
@@ -309,6 +321,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "rgba(255, 255, 255, 0.2)",
     paddingTop: 5,
+    position: "relative",
   },
   controlsContainer: {
     width: "100%",
@@ -360,10 +373,28 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   connectionStatus: {
+    position: "absolute",
+    top: 5,
+    left: 0,
+    right: 0,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 5,
+    zIndex: 10,
+  },
+  dotsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    marginBottom: 10,
+  },
+  dotImage: {
+    width: 20,
+    height: 20,
+  },
+  dotImageFlipped: {
+    transform: [{ scaleX: -1 }],
   },
   statusDot: {
     width: 10,

@@ -1,28 +1,45 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Button, TextInput, View } from "react-native";
-
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function Home() {
-  const [roomName, setRoomName] = useState("");
   const router = useRouter();
 
-  const goToRoom = () => {
-    const name = roomName || `room-${Math.floor(Math.random() * 10000)}`;
-    setRoomName(name);
-    router.push(`/room/${name}`);
+  const handleJoinGame = () => {
+    router.push("/join");
   };
 
-
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
-      <TextInput
-        placeholder="Nom de la room"
-        value={roomName}
-        onChangeText={setRoomName}
-        style={{ borderWidth: 1, padding: 10, width: "100%", marginBottom: 20 }}
-      />
-      <Button title="Créer / Rejoindre une room" onPress={goToRoom} />
+    <View style={styles.container}>
+      <Text style={styles.title}>GAIA</Text>
+      <TouchableOpacity style={styles.button} onPress={handleJoinGame}>
+        <Text style={styles.buttonText}>Rejoindre une partie</Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#D9D9D9",
+  },
+  title: {
+    fontSize: 48,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 60,
+  },
+  button: {
+    backgroundColor: "#333",
+    paddingHorizontal: 40,
+    paddingVertical: 15,
+    borderRadius: 8,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+});
