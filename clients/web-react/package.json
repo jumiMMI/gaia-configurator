@@ -9,6 +9,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
+    "@benjos/cookware": "^1.0.4",
     "@gaia/shared": "*",
     "event-target-polyfill": "^0.0.4",
     "event-target-shim": "^6.0.2",
@@ -21,7 +22,8 @@
     "react-native-get-random-values": "^1.11.0",
     "react-router-dom": "^6.28.0",
     "simplex-noise": "^4.0.3",
-    "three": "^0.166.1"
+    "three": "^0.182.0",
+    "vite-plugin-glsl": "^1.5.5"
   },
   "devDependencies": {
     "@types/react": "^19.1.0",

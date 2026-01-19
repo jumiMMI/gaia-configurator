@@ -26,12 +26,12 @@ export function createPartyClient(room: string, host: string) {
 }
 
 // Configuration PartyKit
-const PARTYKIT_HOST = process.env.EXPO_PUBLIC_PARTYKIT_HOST || "10.137.97.63:1999";
+const PARTYKIT_HOST = process.env.EXPO_PUBLIC_PARTYKIT_HOST || "127.0.0.1:1999";
 
 interface UsePlanetSyncOptions {
   room: string;
   onBiomeUpdate?: (tileIndex: number, biome: BiomeData) => void;
-  canSendUpdate?: () => boolean; 
+  canSendUpdate?: () => boolean;
   onPlacementError?: (tileIndex: number, message: string) => void;
   onGameStart?: () => void; // Callback (message START_GAME)
 }
@@ -40,12 +40,12 @@ interface UsePlanetSyncReturn {
   tileBiomes: Record<number, BiomeData>;
   sendBiomeUpdate: (tileIndex: number, biome: BiomeData) => void;
   resetPlanet: () => void;
-  startGame: () => void; 
+  startGame: () => void;
   isConnected: boolean;
   stats: PlanetStatsData | null;
-  assignedTiles: number[] | null; 
+  assignedTiles: number[] | null;
   isHost: boolean;
-  users: Array<{ id: string; name: string; isHost: boolean }>; 
+  users: Array<{ id: string; name: string; isHost: boolean }>;
   totalUsers: number;
 }
 
@@ -91,7 +91,7 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
       
       const isWeb = Platform.OS === 'web' || typeof window !== 'undefined';
       const clientType = isWeb ? 'web' : 'mobile';
-      
+
       // Attendre un court délai pour s'assurer que la connexion est bien établie
       setTimeout(() => {
         const message = JSON.stringify({
