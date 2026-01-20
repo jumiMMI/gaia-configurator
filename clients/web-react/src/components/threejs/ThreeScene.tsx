@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react';
 // @ts-ignore
+import { AssetId } from '@/constants/AssetId';
+import ThreeAssetManager from '@/managers/ThreeAssetManager';
 import { BiomeData } from '@gaia/shared';
-import { AmbientLight, DirectionalLight, EquirectangularRefractionMapping, Group, LinearSRGBColorSpace, PerspectiveCamera, Scene, Texture, WebGLRenderer } from 'three';
+import { AmbientLight, DirectionalLight, Group, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { OrbitControls, RGBELoader } from 'three/examples/jsm/Addons.js';
 import { updateCameraPosition, useCameraControls } from './controls/CameraControls';
 import { loadAllBiomeModels } from './ThePlanet/biomes/BiomeModels';
 import { createPlanetFlat, updatePlanetFlatBiomes } from './ThePlanet/Planet';
-import Sky from './ThePlanet/Sky';
-import Stars from './ThePlanet/Stars';
+import Space from './ThePlanet/Space';
 
 interface ThreeSceneProps {
     tileBiomes?: Record<number, BiomeData>;
@@ -45,24 +46,21 @@ export default function ThreeScene({ tileBiomes = {} }: ThreeSceneProps) {
         // scene.background = new Color(0x101A26);
         // scene.background = new Color(0xffffff);
         sceneRef.current = scene;
-        const sky = new Sky();
-        const stars = new Stars();
-        scene.add(sky);
-        scene.add(stars);
+        const space = new Space();
+        scene.add(space);
 
         const environmentMap = {
             intensity: 3,
-            texture: null as Texture | null,
+            texture: ThreeAssetManager.getRGBE(AssetId.THREE_HDR_SPACE),
         }
+        environmentMap.texture!.needsUpdate = true;
+        scene.environment = environmentMap.texture;
+        scene.environmentIntensity = environmentMap.intensity!;
 
-        rgbeLoader.load('/hdrs/space.hdr', (dataTexture) => {
-            dataTexture.mapping = EquirectangularRefractionMapping;
-            dataTexture.colorSpace = LinearSRGBColorSpace;
-            environmentMap.texture = dataTexture;
-            environmentMap.texture!.needsUpdate = true;
-            scene.environment = environmentMap.texture;
-            scene.environmentIntensity = environmentMap.intensity!;
-        });
+        // rgbeLoader.load('/hdrs/space.hdr', (dataTexture) => {
+        //     dataTexture.mapping = EquirectangularRefractionMapping;
+        //     dataTexture.colorSpace = LinearSRGBColorSpace;
+        // });
 
         const camera = new PerspectiveCamera(60, width / height, 0.01, 1000);
         updateCameraPosition(camera, cameraStateRef.current);
@@ -84,6 +82,9 @@ export default function ThreeScene({ tileBiomes = {} }: ThreeSceneProps) {
         const controls = new OrbitControls(camera, containerRef.current!);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
+        controls.minDistance = 5;
+        controls.maxDistance = 20;
+        controls.maxPolarAngle = Math.PI;
         camera.lookAt(0, 0, 0);
 
         // Fonction d'initialisation asynchrone
@@ -114,7 +115,7 @@ export default function ThreeScene({ tileBiomes = {} }: ThreeSceneProps) {
 
                 rendererRef.current.render(sceneRef.current, cameraRef.current);
                 animationFrameRef.current = requestAnimationFrame(loop);
-                stars.update(dt);
+                space.update(dt);
             };
 
             loop();

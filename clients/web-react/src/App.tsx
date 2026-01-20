@@ -1,8 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import Cinematic from './pages/Cinematic';
+import Game from './pages/Game';
 import Home from './pages/Home';
 import Room from './pages/Room';
-import Game from './pages/Game';
-import Cinematic from './pages/Cinematic';
 
 function App() {
   return (
