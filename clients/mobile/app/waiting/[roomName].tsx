@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Animated, StyleSheet, Text, View } from "react-native";
 import { usePlanetSync } from "../../src/party/client";
 
 export default function WaitingScreen() {
@@ -13,7 +13,7 @@ export default function WaitingScreen() {
         ? roomName[0] 
         : (typeof roomName === 'string' ? roomName : '');
 
-    const { users, isConnected, isHost, startGame } = usePlanetSync({
+    const { users, isConnected } = usePlanetSync({
         room: roomNameString || "",
         onGameStart: () => {
             router.replace(`/room/${roomNameString}`);
@@ -51,10 +51,6 @@ export default function WaitingScreen() {
         );
     }
 
-    const handleStartGame = () => {
-        router.replace(`/room/${roomNameString}`);
-    };
-
     return (
         <View style={styles.container}>
             <View style={styles.content}>
@@ -74,13 +70,6 @@ export default function WaitingScreen() {
                         Nombre de joueurs : {isConnected ? mobileParticipantsCount : "..."}
                     </Text>
                 </View>
-
-                <TouchableOpacity 
-                    style={styles.startButton} 
-                    onPress={handleStartGame}
-                >
-                    <Text style={styles.startButtonText}>Lancer la partie</Text>
-                </TouchableOpacity>
             </View>
         </View>
     );
@@ -126,18 +115,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: "#333",
         fontWeight: "500",
-    },
-    startButton: {
-        backgroundColor: "#333",
-        paddingHorizontal: 32,
-        paddingVertical: 16,
-        borderRadius: 8,
-        marginTop: 24,
-    },
-    startButtonText: {
-        color: "#fff",
-        fontSize: 16,
-        fontWeight: "600",
     },
     errorText: {
         fontSize: 16,

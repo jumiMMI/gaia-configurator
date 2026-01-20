@@ -15,7 +15,6 @@ import {
 } from "@gaia/shared";
 import PartySocket from "partysocket";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Platform } from "react-native";
 import { getOrCreateClientId } from "../utils/clientId";
 
 export function createPartyClient(room: string, host: string) {
@@ -26,7 +25,7 @@ export function createPartyClient(room: string, host: string) {
 }
 
 // Configuration PartyKit
-const PARTYKIT_HOST = process.env.EXPO_PUBLIC_PARTYKIT_HOST || "127.0.0.1:1999";
+const PARTYKIT_HOST = process.env.EXPO_PUBLIC_PARTYKIT_HOST || "10.137.97.63:1999";
 
 interface UsePlanetSyncOptions {
   room: string;
@@ -62,8 +61,27 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
   const [totalUsers, setTotalUsers] = useState(0);
   const socketRef = useRef<PartySocket | null>(null);
   const clientIdRef = useRef<string | null>(null);
+  
+  const onBiomeUpdateRef = useRef(onBiomeUpdate);
+  const onPlacementErrorRef = useRef(onPlacementError);
+  const onGameStartRef = useRef(onGameStart);
+  
+  useEffect(() => {
+    onBiomeUpdateRef.current = onBiomeUpdate;
+    onPlacementErrorRef.current = onPlacementError;
+    onGameStartRef.current = onGameStart;
+  }, [onBiomeUpdate, onPlacementError, onGameStart]);
 
   useEffect(() => {
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+
+    if (!room) {
+      return;
+    }
+
     let mounted = true;
     
     const initClientId = async () => {
@@ -89,10 +107,8 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
         clientIdRef.current = await getOrCreateClientId();
       }
       
-      const isWeb = Platform.OS === 'web' || typeof window !== 'undefined';
-      const clientType = isWeb ? 'web' : 'mobile';
+      const clientType = 'mobile';
 
-      // Attendre un court délai pour s'assurer que la connexion est bien établie
       setTimeout(() => {
         const message = JSON.stringify({
           type: 'CLIENT_INFO',
@@ -113,7 +129,7 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
       try {
         const data = JSON.parse(event.data);
 
-        // Réception de l'état complet (à la connexion)
+        // Réception de l'état complet
         if (isSyncStateMessage(data)) {
           setTileBiomes(data.tileBiomes);
           if (data.stats) {
@@ -131,7 +147,7 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
           if (data.stats) {
             setPlanetStats(data.stats);
           }
-          onBiomeUpdate?.(data.tileIndex, data.biome);
+          onBiomeUpdateRef.current?.(data.tileIndex, data.biome);
           return;
         }
 
@@ -148,15 +164,33 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
         // Réception du rôle (host ou non)
         if (data.type === 'role') {
           const roleMsg = data as RoleMessage;
-          setIsHost(roleMsg.isHost);
+          setIsHost((prevIsHost) => {
+            if (prevIsHost !== roleMsg.isHost) {
+              return roleMsg.isHost;
+            }
+            return prevIsHost;
+          });
           return;
         }
 
         // Réception de la liste des utilisateurs
         if (data.type === 'users') {
           const usersMsg = data as UsersMessage;
-          setUsers(usersMsg.users);
-          setTotalUsers(usersMsg.users.length);
+          // Éviter les mises à jour inutiles si les utilisateurs n'ont pas changé
+          setUsers((prevUsers) => {
+            const prevUsersStr = JSON.stringify(prevUsers.map(u => ({ id: u.id, isHost: u.isHost })));
+            const newUsersStr = JSON.stringify(usersMsg.users.map(u => ({ id: u.id, isHost: u.isHost })));
+            if (prevUsersStr !== newUsersStr) {
+              return usersMsg.users;
+            }
+            return prevUsers; // Pas de changement, garder la référence précédente
+          });
+          setTotalUsers((prevTotal) => {
+            if (prevTotal !== usersMsg.users.length) {
+              return usersMsg.users.length;
+            }
+            return prevTotal;
+          });
           return;
         }
 
@@ -170,13 +204,13 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
         // Réception d'une erreur de placement
         if (isPlacementErrorMessage(data)) {
           console.warn(`[PartyKit] Erreur de placement: ${data.message} (tuile ${data.tileIndex})`);
-          onPlacementError?.(data.tileIndex, data.message);
+          onPlacementErrorRef.current?.(data.tileIndex, data.message);
           return;
         }
 
         // Réception du signal de démarrage du jeu
         if (isStartGameMessage(data)) {
-          onGameStart?.();
+          onGameStartRef.current?.();
           return;
         }
       } catch {
@@ -190,7 +224,7 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
       socket.close();
       socketRef.current = null;
     };
-  }, [room, onBiomeUpdate, onPlacementError, onGameStart]);
+  }, [room]); // Retirer les callbacks des dépendances pour éviter les reconnexions
 
   const sendBiomeUpdate = useCallback((tileIndex: number, biome: BiomeData) => {
     if (canSendUpdate && !canSendUpdate()) {

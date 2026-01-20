@@ -39,7 +39,7 @@ export default function GameMobile({ roomName }: GameMobileProps) {
     totalUsers,
   } = usePlanetSync({
     room: roomName,
-    canSendUpdate: () => !isGameFinished,
+    canSendUpdate: () => isTimerActive && !isGameFinished,
     onPlacementError: (tileIndex, message) => {
       Alert.alert("Placement non autorisé", message);
     },

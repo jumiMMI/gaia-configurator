@@ -1,10 +1,23 @@
-import * as THREE from 'three';
 import { BiomeData, calculerDimensionsGrilleFromHexasphere, DEFAULT_TILE_COUNT, getDefaultHexasphereData } from '@gaia/shared';
+import * as THREE from 'three';
 import { getModelForBiome } from './biomes/BiomeModels';
 
 const DEFAULT_TILE_COLOR = 0x084495;
 const OCEAN_TILE_COLOR = 0x3b82f6;
+const VOLCAN_TILE_COLOR = 0x1E0C0D; // #1E0C0DFF
 const HEX_RADIUS = 0.5;
+
+/**
+ * Génère une couleur aléatoire pour les tuiles
+ */
+function getRandomTileColor(): number {
+    // Générer des valeurs RGB aléatoires
+    const r = Math.floor(Math.random() * 256);
+    const g = Math.floor(Math.random() * 256);
+    const b = Math.floor(Math.random() * 256);
+    // Convertir en hexadécimal
+    return (r << 16) | (g << 8) | b;
+}
 
 const placedModels: Map<number, THREE.Object3D> = new Map();
 const placedModelsFlat: Map<number, THREE.Object3D> = new Map();
@@ -17,8 +30,9 @@ export default function createPlanet(): THREE.Group {
         const tile = hexasphereData.hexasphere.tiles[i];
 
         const geometry = createTileGeometry(tile);
+        // Initialiser toutes les tuiles avec la couleur océan par défaut
         const material = new THREE.MeshBasicMaterial({
-            color: DEFAULT_TILE_COLOR,
+            color: OCEAN_TILE_COLOR,
             side: THREE.DoubleSide,
             // wireframe: true,
         });
@@ -42,7 +56,7 @@ export default function createPlanet(): THREE.Group {
         mesh.userData.hexRadius = center.distanceTo(boundary0);
         
         // Stocker les boundary points pour le calcul de scale basé sur la longueur moyenne des arêtes
-        mesh.userData.boundary = tile.boundary.map(p => ({
+        mesh.userData.boundary = tile.boundary.map((p: { x: string | number; y: string | number; z: string | number }) => ({
             x: Number(p.x),
             y: Number(p.y),
             z: Number(p.z)
@@ -71,9 +85,12 @@ export async function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record
 
         if (biomeData) {
             if (biomeData.nom === 'Prairie') {
-                child.visible = false;
+
+                child.visible = true;
+                child.material.color = new THREE.Color(biomeData.couleur);
+                child.position.y = 0;
+                child.material.depthWrite = true;
                 
-                // Créer le terrain procédural de la prairie
                 if (!placedModels.has(tileIndex)) {
                     const rawBoundary = child.userData.boundary;
                     const boundaryPoints = rawBoundary.map((p: { x: number; y: number; z: number }) => new THREE.Vector3(p.x, p.y, p.z));
@@ -92,9 +109,9 @@ export async function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record
                     }
                 }
             } else if (biomeData.nom === 'Océan') {
-                // Pour l'océan, utiliser juste la couleur bleue claire
+                // Pour l'océan, utiliser la couleur bleue
                 child.visible = true;
-                child.material.color.setHex(OCEAN_TILE_COLOR);
+                child.material.color = new THREE.Color(biomeData.couleur);
                 child.position.y = 0;
                 child.material.depthWrite = true;
                 
@@ -104,10 +121,20 @@ export async function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record
                     planet.remove(existing);
                     placedModels.delete(tileIndex);
                 }
-            } else if (biomeData.nom === 'Volcan' || biomeData.nom === 'Glacier') {
-                // Pour le volcan et le glacier, cacher la tuile de base (seul le modèle 3D sera visible)
-                child.visible = false;
+            } else if (biomeData.nom === 'Volcan') {
+                // Pour le volcan, utiliser la couleur spécifiée #1E0C0DFF
+                child.visible = true;
+                child.material.color.setHex(VOLCAN_TILE_COLOR);
+                child.position.y = 0;
+                child.material.depthWrite = true;
+            } else if (biomeData.nom === 'Glacier') {
+                // Pour le glacier, utiliser sa couleur définie
+                child.visible = true;
+                child.material.color = new THREE.Color(biomeData.couleur);
+                child.position.y = 0;
+                child.material.depthWrite = true;
             } else {
+                // Pour tous les autres biomes (Forêt, Désert, Montagne, etc.)
                 child.visible = true;
                 child.material.color = new THREE.Color(biomeData.couleur);
                 child.position.y = 0;
@@ -146,9 +173,9 @@ export async function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record
             }
         } 
         else {
-            // Réinitialiser la couleur par défaut et réafficher la tuile de base
-            child.material.color.setHex(DEFAULT_TILE_COLOR);
+            // Si pas de biome, appliquer l'océan par défaut
             child.visible = true;
+            child.material.color.setHex(OCEAN_TILE_COLOR);
             child.position.y = 0;
             child.material.depthWrite = true;
 

@@ -7,6 +7,7 @@ export default function JoinGame() {
   const [roomName, setRoomName] = useState("");
   const [permission, requestPermission] = useCameraPermissions();
   const router = useRouter();
+  const [hasScanned, setHasScanned] = useState(false);
 
   useEffect(() => {
     if (permission && !permission.granted) {
@@ -15,20 +16,39 @@ export default function JoinGame() {
   }, [permission]);
 
   const handleBarCodeScanned = ({ data }: { data: string }) => {
+    // Empêcher plusieurs scans du même QR code
+    if (hasScanned) {
+      return;
+    }
 
+    console.log("[MOBILE Join] QR Code scanné:", data);
     const scannedRoomName = data.trim();
     if (scannedRoomName) {
-      router.push({
+      setHasScanned(true);
+      console.log("[MOBILE Join] Navigation vers /waiting/" + scannedRoomName);
+      // Utiliser replace au lieu de push pour éviter d'empiler les pages
+      router.replace({
         pathname: "/waiting/[roomName]",
         params: { roomName: scannedRoomName },
       } as any);
+    } else {
+      console.warn("[MOBILE Join] Nom de room vide après trim");
     }
   };
 
   const handleSubmit = () => {
+    // Empêcher plusieurs soumissions
+    if (hasScanned) {
+      return;
+    }
+
     const name = roomName.trim();
+    console.log("[MOBILE Join] Soumission manuelle du code:", name);
     if (name) {
-      router.push({
+      setHasScanned(true);
+      console.log("[MOBILE Join] Navigation vers /waiting/" + name);
+      // Utiliser replace au lieu de push pour éviter d'empiler les pages
+      router.replace({
         pathname: "/waiting/[roomName]",
         params: { roomName: name },
       } as any);

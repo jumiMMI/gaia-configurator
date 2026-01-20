@@ -3,10 +3,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { applyNoiseToGeometry, createGrassInstances, createSubdividedHexagonGeometry } from './PrairieTerrain';
 
-// Stockage en mémoire
 const loadedModels: Map<string, THREE.Object3D> = new Map();
-
-// Chemins publics vers les modèles GLB
+const waterMaterials: Map<string, THREE.MeshStandardMaterial[]> = new Map();
 const modelPaths: Record<string, string> = {
     'Forêt': '/models/foret.glb',
     'Désert': '/models/desert.glb',
@@ -14,14 +12,58 @@ const modelPaths: Record<string, string> = {
     'Glacier': '/models/glacier.glb',
 };
 
-/**
- * charge les modèles en mémoire
- */
+function findAllMaterials(model: THREE.Object3D): THREE.Material[] {
+    const materials: THREE.Material[] = [];
+    
+    model.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+            const materialArray = Array.isArray(child.material) 
+                ? child.material 
+                : [child.material];
+                
+            materialArray.forEach(mat => {
+                if (!materials.includes(mat)) {
+                    materials.push(mat);
+                }
+            });
+        }
+    });
+    
+    return materials;
+}
+
+function findMaterialByName(
+    model: THREE.Object3D, 
+    materialName: string
+): THREE.MeshStandardMaterial | null {
+    let foundMaterial: THREE.MeshStandardMaterial | null = null;
+    
+    model.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+            const materialArray = Array.isArray(child.material) 
+                ? child.material 
+                : [child.material];
+                
+            materialArray.forEach(mat => {
+                const matName = mat.name || (mat as any).userData?.name || '';
+                
+                if (matName.toLowerCase().includes(materialName.toLowerCase())) {
+                    if (mat instanceof THREE.MeshStandardMaterial || 
+                        mat instanceof THREE.MeshPhysicalMaterial) {
+                        foundMaterial = mat as THREE.MeshStandardMaterial;
+                    }
+                }
+            });
+        }
+    });
+    
+    return foundMaterial;
+}
+
 export async function loadAllBiomeModels(): Promise<void> {
     const loader = new GLTFLoader();
     
     for (const [biomeName, modelPath] of Object.entries(modelPaths)) {
-        // skip si déjà chargé
         if (loadedModels.has(biomeName)) continue;
         
         await new Promise<void>((resolve, reject) => {
@@ -30,6 +72,49 @@ export async function loadAllBiomeModels(): Promise<void> {
                 model.scale.set(1, 1, 1);
                 loadedModels.set(biomeName, model);
                 console.log(`Modèle ${biomeName} chargé`);
+                
+                if (biomeName === 'Glacier') {
+                    console.log('🔍 Recherche du matériau "water-glacier" dans le modèle Glacier...');
+                    
+                    const allMaterials = findAllMaterials(model);
+                    console.log(`📋 Matériaux trouvés dans Glacier: ${allMaterials.length}`);
+                    
+                    allMaterials.forEach((mat, index) => {
+                        const matName = mat.name || (mat as any).userData?.name || 'Sans nom';
+                        const matType = mat.type;
+                        console.log(`  [${index}] Nom: "${matName}", Type: ${matType}`);
+                        
+                        if (mat instanceof THREE.MeshStandardMaterial || 
+                            mat instanceof THREE.MeshPhysicalMaterial) {
+                            const standardMat = mat as THREE.MeshStandardMaterial;
+                            console.log(`      - normalMap: ${standardMat.normalMap ? 'OUI' : 'NON'}`);
+                            console.log(`      - transparent: ${standardMat.transparent}`);
+                            console.log(`      - opacity: ${standardMat.opacity}`);
+                        }
+                    });
+                    
+                    const waterMaterial = findMaterialByName(model, 'water-glacier');
+                    
+                    if (waterMaterial) {
+                        console.log('✅ Matériau "water-glacier" TROUVÉ !');
+                        console.log('   Détails du matériau:');
+                        console.log(`   - Type: ${waterMaterial.type}`);
+                        console.log(`   - Nom: ${waterMaterial.name}`);
+                        console.log(`   - NormalMap: ${waterMaterial.normalMap ? 'OUI' : 'NON'}`);
+                        if (waterMaterial.normalMap) {
+                            console.log(`   - NormalMap image: ${waterMaterial.normalMap.image?.src || 'N/A'}`);
+                        }
+                        
+                        if (!waterMaterials.has('Glacier')) {
+                            waterMaterials.set('Glacier', []);
+                        }
+                        waterMaterials.get('Glacier')!.push(waterMaterial);
+                    } else {
+                        console.log('❌ Matériau "water-glacier" NON TROUVÉ');
+                        console.log('   Vérifiez que le matériau a bien ce nom dans Blender');
+                    }
+                }
+                
                 resolve();
             }, undefined, (error: any) => {
                 console.error(`Erreur chargement ${biomeName}:`, error);
@@ -40,9 +125,6 @@ export async function loadAllBiomeModels(): Promise<void> {
 }
 
 
-/**
- * Crée le terrain de prairie avec structure hexagonale subdivisée et relief
- */
 async function createPrairieTerrain(
     boundary: THREE.Vector3[] | Array<{ x: number; y: number; z: number }>,
     center: THREE.Vector3,
@@ -51,41 +133,36 @@ async function createPrairieTerrain(
 ): Promise<THREE.Group> {
     const group = new THREE.Group();
 
-    // Créer la géométrie hexagonale subdivisée (3 niveaux = ~61 vertices)
     const geometry = createSubdividedHexagonGeometry(
         boundary,
         center,
-        3, // subdivisions
+        3,
         isFlat,
         hexRadius
     );
 
-    // Créer plusieurs collines avec Simplex Noise (variations de tailles et positions)
     applyNoiseToGeometry(
         geometry,
         {
-            intensity: 0.5,    // Hauteur maximale des collines
-            frequency: 1.2,     // Fréquence pour positionner les collines (plus élevé = plus de collines)
-            hillSize: 0.2,     // Taille des collines (0.2 = petites, 0.4 = grandes)
+            intensity: 0.5,
+            frequency: 1.2,
+            hillSize: 0.2,
         },
         isFlat,
         center,
         hexRadius
     );
 
-    // Créer le matériau de base (vert prairie)
     const material = new THREE.MeshStandardMaterial({
-        color: 0x84cc16, // Couleur prairie
+        color: 0x84cc16,
         flatShading: false,
         wireframe: false,
-        side: THREE.DoubleSide, // Rendre les deux côtés visibles
+        side: THREE.DoubleSide,
     });
 
-    // Créer le mesh du terrain
     const terrain = new THREE.Mesh(geometry, material);
     group.add(terrain);
 
-    // Instancier les herbes sur le terrain
     const grassInstances = await createGrassInstances(geometry, isFlat, center, hexRadius);
     if (grassInstances) {
         group.add(grassInstances);
@@ -103,7 +180,6 @@ export async function getModelForBiome(
         hexRadius?: number;
     }
 ): Promise<THREE.Object3D | null> {
-    // Si c'est une prairie, créer le terrain procédural
     if (biomeName === 'Prairie') {
         if (options && options.boundary && options.center) {
             return await createPrairieTerrain(
@@ -113,12 +189,10 @@ export async function getModelForBiome(
                 options.hexRadius ?? 0.5
             );
         }
-        // Si les options ne sont pas fournies, retourner null
         console.warn('Prairie nécessite des options (boundary, center) pour être créée');
         return null;
     }
 
-    // Pour les autres biomes, utiliser les modèles GLB
     const model = loadedModels.get(biomeName);
     if (!model) {
         return null;
@@ -132,3 +206,239 @@ export function hasModelForBiome(biomeName: string): boolean {
     return loadedModels.has(biomeName);
 }
 
+export function getWaterMaterialsForBiome(biomeName: string): THREE.MeshStandardMaterial[] {
+    return waterMaterials.get(biomeName) || [];
+}
+
+export function findWaterMaterialsInScene(scene: THREE.Object3D): THREE.MeshPhysicalMaterial[] {
+    const materials: THREE.MeshPhysicalMaterial[] = [];
+    
+    scene.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+            const material = Array.isArray(child.material) 
+                ? child.material[0] 
+                : child.material;
+            
+            if (material instanceof THREE.MeshPhysicalMaterial) {
+                if (material.name === 'water-glacier' && material.normalMap) {
+                    if (!materials.includes(material)) {
+                        material.normalMap.wrapS = THREE.RepeatWrapping;
+                        material.normalMap.wrapT = THREE.RepeatWrapping;
+                        materials.push(material);
+                    }
+                }
+            }
+        }
+    });
+    
+    return materials;
+}
+
+export function findIceGlacierMaterialsInScene(scene: THREE.Object3D): THREE.Material[] {
+    const materials: THREE.Material[] = [];
+    const processed = new Set<THREE.Material>();
+    
+    scene.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+            const materialArray = Array.isArray(child.material) 
+                ? child.material 
+                : [child.material];
+            
+            materialArray.forEach(material => {
+                if (!processed.has(material)) {
+                    if (material.name && (
+                        material.name === 'Material.008' ||
+                        (material.name.toLowerCase().includes('glacier') && 
+                         material.name !== 'water-glacier' &&
+                         !material.name.toLowerCase().includes('water'))
+                    )) {
+                        if (material instanceof THREE.MeshStandardMaterial || 
+                            material instanceof THREE.MeshPhysicalMaterial) {
+                            if (!materials.includes(material)) {
+                                materials.push(material);
+                                processed.add(material);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+    
+    return materials;
+}
+
+const processedEmissiveMaterials = new Set<THREE.Material>();
+const processedVolcanoEmissiveMaterials = new Set<THREE.Material>();
+
+export function applyEmissivityToVolcanoMaterials(scene: THREE.Object3D): void {
+    scene.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+            const materialArray = Array.isArray(child.material) 
+                ? child.material 
+                : [child.material];
+            
+            materialArray.forEach(material => {
+                if (!processedVolcanoEmissiveMaterials.has(material)) {
+                    if (material.name && (
+                        material.name.toLowerCase().includes('volcan') ||
+                        material.name.toLowerCase().includes('volcano') ||
+                        material.name.toLowerCase().includes('lava') ||
+                        material.name.toLowerCase().includes('magma')
+                    )) {
+                        if (material instanceof THREE.MeshStandardMaterial || 
+                            material instanceof THREE.MeshPhysicalMaterial) {
+                            
+                            console.log('🌋 Matériau Volcan trouvé:', material.name);
+                            console.log('   - Type:', material.type);
+                            console.log('   - emissiveMap:', material.emissiveMap ? 'OUI ✅' : 'NON ❌');
+                            
+                            if (material.emissiveMap) {
+                                console.log('   - emissiveMap type:', material.emissiveMap.type);
+                                console.log('   - emissiveMap image:', material.emissiveMap.image ? 'OUI ✅' : 'NON ❌');
+                                if (material.emissiveMap.image) {
+                                    console.log('   - emissiveMap image src:', material.emissiveMap.image.src || 'N/A');
+                                    console.log('   - emissiveMap image width:', material.emissiveMap.image.width);
+                                    console.log('   - emissiveMap image height:', material.emissiveMap.image.height);
+                                }
+                                console.log('   - emissiveMap wrapS:', material.emissiveMap.wrapS);
+                                console.log('   - emissiveMap wrapT:', material.emissiveMap.wrapT);
+                            } else {
+                                console.log('   ⚠️ Pas de emissiveMap trouvée pour ce matériau');
+                            }
+                            
+                            console.log('   - emissive actuelle:', `(${material.emissive.r.toFixed(3)}, ${material.emissive.g.toFixed(3)}, ${material.emissive.b.toFixed(3)})`);
+                            console.log('   - emissiveIntensity actuelle:', material.emissiveIntensity);
+                            
+                            material.emissive = new THREE.Color(0xff6600);
+                            material.emissiveIntensity = 0.4;
+                            processedVolcanoEmissiveMaterials.add(material);
+                        }
+                    }
+                }
+            });
+        }
+    });
+}
+
+export function applyEmissivityToGlacierMaterials(scene: THREE.Object3D): void {
+    scene.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+            const materialArray = Array.isArray(child.material) 
+                ? child.material 
+                : [child.material];
+            
+            materialArray.forEach(material => {
+                if (!processedEmissiveMaterials.has(material)) {
+                    if (material.name && (
+                        material.name.toLowerCase().includes('glacier') ||
+                        material.name.toLowerCase().includes('ice') ||
+                        material.name === 'water-glacier' ||
+                        material.name === 'Material.008'
+                    )) {
+                        if (material instanceof THREE.MeshStandardMaterial || 
+                            material instanceof THREE.MeshPhysicalMaterial) {
+                            
+                            if (material.name === 'water-glacier') {
+                                material.emissive = new THREE.Color(0, 0.238, 1);
+                                material.emissiveIntensity = 0.96;
+                            } else {
+                                material.emissive = new THREE.Color(0, 0, 1);
+                                material.emissiveIntensity = 0.6;
+                                material.color = new THREE.Color(0xC8E6FF);
+                            }
+                            processedEmissiveMaterials.add(material);
+                        }
+                    }
+                }
+            });
+        }
+    });
+}
+
+export function animateWaterMaterials(materials: THREE.MeshPhysicalMaterial[], dt: number): void {
+    if (materials.length === 0) return;
+    
+    materials.forEach((material) => {
+        if (material.normalMap) {
+            const speedX = 0.035;
+            const speedY = 0.028;
+            
+
+            material.normalMap.offset.x += speedX * dt;
+            material.normalMap.offset.y += speedY * dt;
+            
+
+            material.normalMap.offset.x = material.normalMap.offset.x % 1;
+            material.normalMap.offset.y = material.normalMap.offset.y % 1;
+            
+
+            material.normalMap.needsUpdate = true;
+            material.needsUpdate = true;
+        }
+    });
+}
+
+export function findVolcanoMaterialsInScene(scene: THREE.Object3D): THREE.Material[] {
+    const materials: THREE.Material[] = [];
+    const processed = new Set<THREE.Material>();
+    
+    scene.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+            const materialArray = Array.isArray(child.material) 
+                ? child.material 
+                : [child.material];
+            
+            materialArray.forEach(material => {
+                if (!processed.has(material)) {
+                    if (material.name && (
+                        material.name.toLowerCase().includes('volcan') ||
+                        material.name.toLowerCase().includes('volcano') ||
+                        material.name.toLowerCase().includes('lava') ||
+                        material.name.toLowerCase().includes('magma')
+                    )) {
+                        if (material instanceof THREE.MeshStandardMaterial || 
+                            material instanceof THREE.MeshPhysicalMaterial) {
+                            if (!materials.includes(material)) {
+                                materials.push(material);
+                                processed.add(material);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+    
+    return materials;
+}
+
+const volcanoAnimationTimes = new Map<THREE.Material, number>();
+
+export function animateVolcanoEmissivity(materials: THREE.Material[], dt: number): void {
+    if (materials.length === 0) return;
+    
+    materials.forEach(material => {
+        if (material instanceof THREE.MeshStandardMaterial || 
+            material instanceof THREE.MeshPhysicalMaterial) {
+            
+            if (!volcanoAnimationTimes.has(material)) {
+                const randomOffset = Math.random() * Math.PI * 2;
+                volcanoAnimationTimes.set(material, randomOffset);
+            }
+            
+            let animationTime = volcanoAnimationTimes.get(material)!;
+            animationTime += dt;
+            volcanoAnimationTimes.set(material, animationTime);
+            
+            const baseIntensity = 0.3;
+            const amplitude = 0.9;
+            const speed = 1.5;
+            
+            const pulsation = Math.sin(animationTime * speed) * 0.5 + 0.5;
+            
+            material.emissiveIntensity = baseIntensity + (amplitude * pulsation);
+            material.needsUpdate = true;
+        }
+    });
+}
