@@ -1,0 +1,129 @@
+.room-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #D9D9D9;
+    padding: 20px;
+}
+
+.room-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    max-width: 1000px;
+    width: 100%;
+}
+
+.room-content-top {
+    display: flex;
+    flex-direction: row;
+    /* align-items: center; */
+    justify-content: center;
+    gap: 40px;
+    width: 100%;
+}
+
+.qr-code-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.right-section {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    /* max-width: 1200px; */
+}
+
+.wrapper-right {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: auto;
+    background-color: #5f80a8;
+    padding: 28px;
+    border-radius: 60px;
+}
+
+.team-name-container {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    width: 100%;
+    gap: 12px;
+}
+
+.team-name-label {
+    font-size: 32px;
+    font-weight: 500;
+    color: #333;
+    white-space: nowrap;
+}
+
+.team-name-input {
+    flex: 1;
+    padding: 0;
+    padding-bottom: 0px;
+    border: none;
+    border-radius: 0;
+    font-size: 32px;
+    font-family: "omnium", sans-serif;
+    background-color: transparent;
+    background-image: repeating-linear-gradient(to right,
+            #333 0px,
+            #333 2px,
+            transparent 2px,
+            transparent 8px);
+    background-size: 8px 2px;
+    background-position: 0 bottom;
+    background-repeat: repeat-x;
+    letter-spacing: 0.2em;
+    min-width: 200px;
+    line-height: 1.5;
+}
+
+.team-name-input:focus {
+    outline: none;
+    border-color: #555;
+}
+
+.participants-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+}
+
+.participants-label {
+    color: #333;
+    font-weight: 500;
+}
+
+.participants-count {
+    color: #333;
+    font-weight: bold;
+}
+
+.start-button {
+    padding: 14px 32px;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 15px;
+    font-size: 20px;
+    font-weight: 600;
+    font-family: "omnium", sans-serif;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 24px;
+    min-width: 200px;
+}

@@ -1,10 +1,23 @@
-import * as THREE from 'three';
 import { BiomeData, calculerDimensionsGrilleFromHexasphere, DEFAULT_TILE_COUNT, getDefaultHexasphereData } from '@gaia/shared';
+import * as THREE from 'three';
 import { getModelForBiome } from './biomes/BiomeModels';
 
 const DEFAULT_TILE_COLOR = 0x084495;
 const OCEAN_TILE_COLOR = 0x3b82f6;
+const VOLCAN_TILE_COLOR = 0x1E0C0D; // #1E0C0DFF
 const HEX_RADIUS = 0.5;
+
+/**
+ * Génère une couleur aléatoire pour les tuiles
+ */
+function getRandomTileColor(): number {
+    // Générer des valeurs RGB aléatoires
+    const r = Math.floor(Math.random() * 256);
+    const g = Math.floor(Math.random() * 256);
+    const b = Math.floor(Math.random() * 256);
+    // Convertir en hexadécimal
+    return (r << 16) | (g << 8) | b;
+}
 
 const placedModels: Map<number, THREE.Object3D> = new Map();
 const placedModelsFlat: Map<number, THREE.Object3D> = new Map();
@@ -17,8 +30,9 @@ export default function createPlanet(): THREE.Group {
         const tile = hexasphereData.hexasphere.tiles[i];
 
         const geometry = createTileGeometry(tile);
+        // Initialiser toutes les tuiles avec la couleur océan par défaut
         const material = new THREE.MeshBasicMaterial({
-            color: DEFAULT_TILE_COLOR,
+            color: OCEAN_TILE_COLOR,
             side: THREE.DoubleSide,
             // wireframe: true,
         });
@@ -40,9 +54,9 @@ export default function createPlanet(): THREE.Group {
 
         mesh.userData.centerPoint = center;
         mesh.userData.hexRadius = center.distanceTo(boundary0);
-        
+
         // Stocker les boundary points pour le calcul de scale basé sur la longueur moyenne des arêtes
-        mesh.userData.boundary = tile.boundary.map(p => ({
+        mesh.userData.boundary = tile.boundary.map((p: { x: string | number; y: string | number; z: string | number }) => ({
             x: Number(p.x),
             y: Number(p.y),
             z: Number(p.z)
@@ -70,44 +84,58 @@ export async function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record
         const center = child.userData.centerPoint;
 
         if (biomeData) {
-            if (biomeData.nom === 'Prairie') {
-                child.visible = false;
-                
-                // Créer le terrain procédural de la prairie
-                if (!placedModels.has(tileIndex)) {
-                    const rawBoundary = child.userData.boundary;
-                    const boundaryPoints = rawBoundary.map((p: { x: number; y: number; z: number }) => new THREE.Vector3(p.x, p.y, p.z));
-                    
-                    const model = await getModelForBiome(biomeData.nom, {
-                        boundary: boundaryPoints,
-                        center: center,
-                        isFlat: false,
-                        hexRadius: child.userData.hexRadius,
-                    });
-                    
-                    if (model) {
-                        // Le terrain procédural est déjà positionné correctement dans createPrairieTerrain
-                        planet.add(model);
-                        placedModels.set(tileIndex, model);
-                    }
-                }
-            } else if (biomeData.nom === 'Océan') {
-                // Pour l'océan, utiliser juste la couleur bleue claire
+            // if (biomeData.nom === 'Prairie') {
+
+            //     child.visible = true;
+            //     child.material.color = new THREE.Color(biomeData.couleur);
+            //     child.position.y = 0;
+            //     child.material.depthWrite = true;
+
+            //     if (!placedModels.has(tileIndex)) {
+            //         const rawBoundary = child.userData.boundary;
+            //         const boundaryPoints = rawBoundary.map((p: { x: number; y: number; z: number }) => new THREE.Vector3(p.x, p.y, p.z));
+
+            //         const model = await getModelForBiome(biomeData.nom, {
+            //             boundary: boundaryPoints,
+            //             center: center,
+            //             isFlat: false,
+            //             hexRadius: child.userData.hexRadius,
+            //         });
+
+            //         if (model) {
+            //             // Le terrain procédural est déjà positionné correctement dans createPrairieTerrain
+            //             planet.add(model);
+            //             placedModels.set(tileIndex, model);
+            //         }
+            //     }
+            // } else 
+            if (biomeData.nom === 'Océan') {
+                // Pour l'océan, utiliser la couleur bleue
                 child.visible = true;
-                child.material.color.setHex(OCEAN_TILE_COLOR);
+                child.material.color = new THREE.Color(biomeData.couleur);
                 child.position.y = 0;
                 child.material.depthWrite = true;
-                
+
                 // Supprimer le modèle existant s'il y en a un
                 const existing = placedModels.get(tileIndex);
                 if (existing) {
                     planet.remove(existing);
                     placedModels.delete(tileIndex);
                 }
-            } else if (biomeData.nom === 'Volcan' || biomeData.nom === 'Glacier') {
-                // Pour le volcan et le glacier, cacher la tuile de base (seul le modèle 3D sera visible)
-                child.visible = false;
+            } else if (biomeData.nom === 'Volcan') {
+                // Pour le volcan, utiliser la couleur spécifiée #1E0C0DFF
+                child.visible = true;
+                child.material.color.setHex(VOLCAN_TILE_COLOR);
+                child.position.y = 0;
+                child.material.depthWrite = true;
+            } else if (biomeData.nom === 'Glacier') {
+                // Pour le glacier, utiliser sa couleur définie
+                child.visible = true;
+                child.material.color = new THREE.Color(biomeData.couleur);
+                child.position.y = 0;
+                child.material.depthWrite = true;
             } else {
+                // Pour tous les autres biomes (Forêt, Désert, Montagne, etc.)
                 child.visible = true;
                 child.material.color = new THREE.Color(biomeData.couleur);
                 child.position.y = 0;
@@ -115,12 +143,12 @@ export async function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record
             }
 
             // Placer le modèle 3D seulement pour les biomes qui en ont besoin (pas Prairie, pas Océan)
-            if (biomeData.nom !== 'Prairie' && biomeData.nom !== 'Océan' && !placedModels.has(tileIndex)) {
+            if (biomeData.nom !== 'Océan' && !placedModels.has(tileIndex)) {
                 const rawBoundary = child.userData.boundary;
                 const boundaryPoints = rawBoundary.map((p: { x: number; y: number; z: number }) => new THREE.Vector3(p.x, p.y, p.z));
-                
+
                 const model = await getModelForBiome(biomeData.nom);
-                
+
                 if (model) {
                     model.position.copy(center);
                     const normal = center.clone().normalize();
@@ -136,7 +164,7 @@ export async function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record
                         totalEdgeLength += current.distanceTo(next);
                     }
                     const avgEdgeLength = totalEdgeLength / boundaryPoints.length;
-                    
+
                     const scale = avgEdgeLength * 0.90;
                     model.scale.setScalar(scale);
 
@@ -144,11 +172,11 @@ export async function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record
                     placedModels.set(tileIndex, model);
                 }
             }
-        } 
+        }
         else {
-            // Réinitialiser la couleur par défaut et réafficher la tuile de base
-            child.material.color.setHex(DEFAULT_TILE_COLOR);
+            // Si pas de biome, appliquer l'océan par défaut
             child.visible = true;
+            child.material.color.setHex(OCEAN_TILE_COLOR);
             child.position.y = 0;
             child.material.depthWrite = true;
 
@@ -202,10 +230,10 @@ function createTileGeometry(tile: any): THREE.BufferGeometry {
 function createHexagonGeometry(radius: number = 0.5): THREE.BufferGeometry {
     const vertices: number[] = [];
     const indices: number[] = [];
-    
+
     // Centre
     vertices.push(0, 0, 0);
-    
+
     // Points du périmètre
     for (let i = 0; i < 6; i++) {
         const angle = (Math.PI / 3) * i - Math.PI / 2;
@@ -213,24 +241,24 @@ function createHexagonGeometry(radius: number = 0.5): THREE.BufferGeometry {
         const z = radius * Math.sin(angle);
         vertices.push(x, 0, z);
     }
-    
+
     // Créer les triangles
     for (let i = 0; i < 6; i++) {
         indices.push(0, i + 1, ((i + 1) % 6) + 1);
     }
-    
+
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
-    
+
     return geometry;
 }
 
 export function createPlanetFlat(): THREE.Group {
     const group = new THREE.Group();
     const dimensions = calculerDimensionsGrilleFromHexasphere();
-    
+
 
     const SQRT3 = Math.sqrt(3);
     const hexRadius = HEX_RADIUS;
@@ -238,41 +266,41 @@ export function createPlanetFlat(): THREE.Group {
     const hexHeight = hexRadius * 2;
     const horizSpacing = hexWidth;
     const vertSpacing = hexHeight * 0.75;
-    
+
     const gridWidth = dimensions.largeur * horizSpacing;
     const gridHeight = dimensions.hauteur * vertSpacing;
     const gridOffsetX = -gridWidth / 2;
     const gridOffsetZ = -gridHeight / 2;
-    
+
     const material = new THREE.MeshBasicMaterial({
         color: DEFAULT_TILE_COLOR,
         side: THREE.DoubleSide,
         // wireframe: true,
     });
-    
+
     const hexGeometry = createHexagonGeometry(hexRadius);
-    
+
     for (let i = 0; i < DEFAULT_TILE_COUNT; i++) {
         const x = i % dimensions.largeur;
         const y = Math.floor(i / dimensions.largeur);
-        
+
         const offsetX = y % 2 === 1 ? hexWidth / 2 : 0;
         const centerX = x * horizSpacing + hexWidth / 2 + offsetX + gridOffsetX;
         const centerZ = y * vertSpacing + hexRadius + gridOffsetZ;
-        
+
         const mesh = new THREE.Mesh(hexGeometry.clone(), material.clone());
         mesh.position.set(centerX, 0, centerZ);
         mesh.userData.tileIndex = i;
         mesh.userData.centerPoint = new THREE.Vector3(centerX, 0, centerZ);
         mesh.userData.isFlat = true;
-        
+
 
         const avgEdgeLength = hexRadius * 2;
         mesh.userData.avgEdgeLength = avgEdgeLength;
-        
+
         group.add(mesh);
     }
-    
+
     return group;
 }
 
@@ -282,67 +310,69 @@ export function createPlanetFlat(): THREE.Group {
 export async function updatePlanetFlatBiomes(planet: THREE.Group, tileBiomes: Record<number, BiomeData>) {
     for (const child of planet.children) {
         if (!(child instanceof THREE.Mesh) || !child.userData.isFlat) continue;
-        
+
         const tileIndex = child.userData.tileIndex;
         const biomeData = tileBiomes[tileIndex];
         const center = child.userData.centerPoint;
-        
+
         if (biomeData) {
-            if (biomeData.nom === 'Prairie') {
-                child.visible = false;
-                
-                // Créer le terrain procédural de la prairie
-                if (!placedModelsFlat.has(tileIndex)) {
-                    const model = await getModelForBiome(biomeData.nom, {
-                        boundary: [], // Pour la version plate, on crée un hexagone régulier
-                        center: center,
-                        isFlat: true,
-                        hexRadius: HEX_RADIUS,
-                    });
-                    
-                    if (model) {
-                        model.position.copy(center);
-                        model.quaternion.identity();
-                        planet.add(model);
-                        placedModelsFlat.set(tileIndex, model);
-                    }
-                }
-            } else if (biomeData.nom === 'Océan') {
+            // if (biomeData.nom === 'Prairie') {
+            //     child.visible = false;
+
+            //     // Créer le terrain procédural de la prairie
+            //     if (!placedModelsFlat.has(tileIndex)) {
+            //         const model = await getModelForBiome(biomeData.nom, {
+            //             boundary: [], // Pour la version plate, on crée un hexagone régulier
+            //             center: center,
+            //             isFlat: true,
+            //             hexRadius: HEX_RADIUS,
+            //         });
+
+            //         if (model) {
+            //             model.position.copy(center);
+            //             model.quaternion.identity();
+            //             planet.add(model);
+            //             placedModelsFlat.set(tileIndex, model);
+            //         }
+            //     }
+            // } else 
+            if (biomeData.nom === 'Océan') {
                 // Pour l'océan, utiliser juste la couleur bleue claire
                 child.visible = true;
                 child.material.color.setHex(OCEAN_TILE_COLOR);
                 child.position.y = 0;
                 child.material.depthWrite = true;
-                
+
                 // Supprimer le modèle existant s'il y en a un
                 const existing = placedModelsFlat.get(tileIndex);
                 if (existing) {
                     planet.remove(existing);
                     placedModelsFlat.delete(tileIndex);
                 }
-            } else if (biomeData.nom === 'Volcan' || biomeData.nom === 'Glacier') {
-                // Pour le volcan et le glacier, cacher la tuile de base (seul le modèle 3D sera visible)
-                child.visible = false;
+                // } 
+                // else if (biomeData.nom === 'Volcan' || biomeData.nom === 'Glacier') {
+                //     // Pour le volcan et le glacier, cacher la tuile de base (seul le modèle 3D sera visible)
+                //     child.visible = false;
             } else {
                 child.visible = true;
                 child.material.color = new THREE.Color(biomeData.couleur);
                 child.position.y = 0;
                 child.material.depthWrite = true;
             }
-            
+
             // Placer le modèle 3D seulement pour les biomes qui en ont besoin (pas Prairie, pas Océan)
-            if (biomeData.nom !== 'Prairie' && biomeData.nom !== 'Océan' && !placedModelsFlat.has(tileIndex)) {
+            if (biomeData.nom !== 'Océan' && !placedModelsFlat.has(tileIndex)) {
                 const model = await getModelForBiome(biomeData.nom);
-                
+
                 if (model) {
                     model.position.copy(center);
                     model.quaternion.identity();
 
-                    const hexRadius = HEX_RADIUS; 
+                    const hexRadius = HEX_RADIUS;
                     const modelRadiusInBlender = 0.5;
                     const scale = hexRadius / modelRadiusInBlender;
                     model.scale.setScalar(scale);
-                    
+
                     planet.add(model);
                     placedModelsFlat.set(tileIndex, model);
                 }
@@ -352,7 +382,7 @@ export async function updatePlanetFlatBiomes(planet: THREE.Group, tileBiomes: Re
             child.visible = true;
             child.position.y = 0; // Réinitialiser la position
             child.material.depthWrite = true; // Réinitialiser depthWrite
-            
+
             // Supprimer le modèle existant
             const existing = placedModelsFlat.get(tileIndex);
             if (existing) {

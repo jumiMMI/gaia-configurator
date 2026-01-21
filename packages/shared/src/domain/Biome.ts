@@ -61,7 +61,7 @@ export const foret = new Biome(
     'Forêt', 
     '#2d5016', 
     'assets/biomes/foret/ForetTest.glb',
-    null, // Les icônes seront chargées séparément côté client
+    null,
     -2, +10, -3, -3, +5, +10, 0, +10
 );
 export const ocean = new Biome(
@@ -102,7 +102,7 @@ export const glacier = new Biome(
 export const montagne = new Biome(
     'Montagne', 
     '#6b7280', 
-    'assets/models/montagne.glb',
+    'assets/models/montagne.glb', 
     null,
     -5, 0, 0, 0, 0, 0, 0, 0
 );

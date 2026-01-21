@@ -1,8 +1,8 @@
-import { Connection } from "partykit/server";
 import { PLANET_CONFIG } from "@gaia/shared/config/planetConfig";
 import { biomeMap } from "@gaia/shared/domain/Biome";
 import PlanetState from "@gaia/shared/domain/PlanetState";
 import type { BiomeData, SetBiomeMessage, StartGameMessage, SyncStateMessage, TileAssignmentMessage } from "@gaia/shared/party/messages";
+import { Connection } from "partykit/server";
 
 interface User {
   id: string; // ID persistant du client (clientId)
@@ -32,6 +32,17 @@ export default class PartyServer {
 
     if (this.clients.length === 1) {
       this.planetState = new PlanetState(this.TOTAL_TILES);
+      // Initialiser toutes les tuiles avec le biome océan
+      const oceanBiome = biomeMap.get('Océan');
+      if (oceanBiome) {
+        for (let i = 0; i < this.TOTAL_TILES; i++) {
+          this.planetState.setBiome(i, oceanBiome);
+          this.tileBiomes[i] = {
+            nom: oceanBiome.nom,
+            couleur: oceanBiome.couleur,
+          };
+        }
+      }
     }
 
     // L'ID client persistant sera reçu via CLIENT_INFO
@@ -138,6 +149,11 @@ export default class PartyServer {
           stats: this.planetState.getFullStats(),  
         };
         sender.send(JSON.stringify(syncMessage));
+        
+        // Si le jeu est déjà démarré, envoyer START_GAME au nouveau client
+        if (this.isGameStarted) {
+          sender.send(JSON.stringify({ type: 'START_GAME' }));
+        }
         
         return;
       }

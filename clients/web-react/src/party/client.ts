@@ -25,7 +25,7 @@ export function createPartyClient(room: string, host: string) {
 }
 
 // Configuration PartyKit
-const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST || "10.137.101.69:1999";
+const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST || "10.137.97.63:1999";
 
 interface UsePlanetSyncOptions {
   room: string;
@@ -101,16 +101,12 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
     socket.onopen = async () => {
       setIsConnected(true);
       
-      // S'assurer qu'on a l'ID client
       if (!clientIdRef.current) {
         clientIdRef.current = await getOrCreateClientId();
       }
       
-      // Envoyer le type de client (web ou mobile) au serveur avec l'ID persistant
-      // Sur web-react, on est toujours web
       const clientType = 'web';
       
-      // Attendre un court délai pour s'assurer que la connexion est bien établie
       setTimeout(() => {
         const message = JSON.stringify({
           type: 'CLIENT_INFO',
@@ -186,7 +182,6 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
             setRoleReceived(true);
             roleReceivedRef.current = true;
           } else if (roleMsg.hostId && clientIdRef.current) {
-            // Le hostId est différent, donc on n'est pas le host
             setIsHost(false);
             // On ne met pas roleReceived à true ici car ce message pourrait être destiné à un autre client
           }
@@ -199,11 +194,23 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
           return;
         }
 
-        // Réception de la liste des utilisateurs
         if (data.type === 'users') {
           const usersMsg = data as UsersMessage;
-          setUsers(usersMsg.users);
-          setTotalUsers(usersMsg.users.length);
+          // Éviter les mises à jour inutiles si les utilisateurs n'ont pas changé
+          setUsers((prevUsers) => {
+            const prevUsersStr = JSON.stringify(prevUsers.map(u => ({ id: u.id, isHost: u.isHost })));
+            const newUsersStr = JSON.stringify(usersMsg.users.map(u => ({ id: u.id, isHost: u.isHost })));
+            if (prevUsersStr !== newUsersStr) {
+              return usersMsg.users;
+            }
+            return prevUsers; // Pas de changement, garder la référence précédente
+          });
+          setTotalUsers((prevTotal) => {
+            if (prevTotal !== usersMsg.users.length) {
+              return usersMsg.users.length;
+            }
+            return prevTotal;
+          });
           return;
         }
 
@@ -214,13 +221,13 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
           return;
         }
 
-        // Réception d'une erreur de placement
+        // une erreur de placement
         if (isPlacementErrorMessage(data)) {
           onPlacementErrorRef.current?.(data.tileIndex, data.message);
           return;
         }
 
-        // Réception du signal de démarrage du jeu
+        // start game
         if (isStartGameMessage(data)) {
           onGameStartRef.current?.();
           return;
@@ -237,18 +244,18 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
         clearTimeout(roleTimeoutRef.current);
         roleTimeoutRef.current = null;
       }
-      // Ne fermer la socket que si elle existe et n'est pas déjà fermée
+      
       if (socketRef.current) {
-        // Vérifier l'état avant de fermer pour éviter les erreurs
+        
         if (socketRef.current.readyState === WebSocket.OPEN || socketRef.current.readyState === WebSocket.CONNECTING) {
           socketRef.current.close();
         }
         socketRef.current = null;
       }
-      setRoleReceived(false); // Réinitialiser pour la prochaine connexion
+      setRoleReceived(false); 
       roleReceivedRef.current = false;
     };
-  }, [room]); // Retirer les callbacks des dépendances pour éviter les reconnexions multiples
+  }, [room]); 
 
   const sendBiomeUpdate = useCallback((tileIndex: number, biome: BiomeData) => {
     if (canSendUpdate && !canSendUpdate()) {

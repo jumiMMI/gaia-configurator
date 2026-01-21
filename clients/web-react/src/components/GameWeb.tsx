@@ -1,8 +1,8 @@
 import { useGameTimer } from "../contexts/GameTimerContext";
 import { usePlanetSync } from "../party/client";
+import "../styles/GameWeb.css";
 import PlanetStats from "./threejs/ThePlanet/PlanetStats";
 import ThreeScene from "./threejs/ThreeScene";
-import "../styles/GameWeb.css";
 
 interface GameWebProps {
   roomName: string;
@@ -15,6 +15,7 @@ export default function GameWeb({ roomName }: GameWebProps) {
     tileBiomes, 
     isConnected, 
     stats,
+    sendBiomeUpdate,
     startGame: startGameServer,
     isHost,
     roleReceived,
@@ -23,6 +24,7 @@ export default function GameWeb({ roomName }: GameWebProps) {
     resetPlanet,
   } = usePlanetSync({
     room: roomName,
+    canSendUpdate: () => isTimerActive && !isGameFinished,
     onGameStart: () => {
       // Déclencher le timer quand le message START_GAME est reçu du serveur
       startTimer();

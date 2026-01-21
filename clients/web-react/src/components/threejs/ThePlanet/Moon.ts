@@ -15,7 +15,7 @@ export default class Moon extends Object3D {
     }
 
     private _generateGeometry(): void {
-        this._geometry = new SphereGeometry(1, 32, 32);
+        this._geometry = new SphereGeometry(0.5, 32, 32);
     }
 
     private _generateMaterial(): void {
@@ -32,7 +32,7 @@ export default class Moon extends Object3D {
 
     private _generateMesh(): void {
         this._mesh = new Mesh(this._geometry, this._material);
-        this._mesh.position.set(10, 5, 0);
+        this._mesh.position.set(5, 2.5, 0);
         this.add(this._mesh);
     }
 

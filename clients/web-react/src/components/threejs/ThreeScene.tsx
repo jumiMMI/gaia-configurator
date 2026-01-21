@@ -6,8 +6,8 @@ import { BiomeData } from '@gaia/shared';
 import { AmbientLight, DirectionalLight, Group, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { OrbitControls, RGBELoader } from 'three/examples/jsm/Addons.js';
 import { updateCameraPosition, useCameraControls } from './controls/CameraControls';
-import { loadAllBiomeModels } from './ThePlanet/biomes/BiomeModels';
-import { createPlanetFlat, updatePlanetFlatBiomes } from './ThePlanet/Planet';
+import { animateVolcanoEmissivity, animateWaterMaterials, applyEmissivityToGlacierMaterials, applyEmissivityToVolcanoMaterials, findVolcanoMaterialsInScene, findWaterMaterialsInScene, loadAllBiomeModels } from './ThePlanet/biomes/BiomeModels';
+import createPlanet, { updatePlanetBiomes } from './ThePlanet/Planet';
 import Space from './ThePlanet/Space';
 
 interface ThreeSceneProps {
@@ -27,7 +27,7 @@ export default function ThreeScene({ tileBiomes = {} }: ThreeSceneProps) {
 
     useEffect(() => {
         if (planetRef.current) {
-            updatePlanetFlatBiomes(planetRef.current, tileBiomes).catch(console.error);
+            updatePlanetBiomes(planetRef.current, tileBiomes).catch(console.error);
         }
     }, [tileBiomes]);
 
@@ -66,10 +66,10 @@ export default function ThreeScene({ tileBiomes = {} }: ThreeSceneProps) {
         updateCameraPosition(camera, cameraStateRef.current);
         cameraRef.current = camera;
 
-        // Grille hexagonale plate (2D)
+        // Sphère hexagonale 3D avec hexasphere
         let planet: Group;
         try {
-            planet = createPlanetFlat();
+            planet = createPlanet();
             planetRef.current = planet;
             scene.add(planet);
         } catch (error) {
@@ -77,8 +77,8 @@ export default function ThreeScene({ tileBiomes = {} }: ThreeSceneProps) {
             return; // Arrêter l'initialisation si la création échoue
         }
 
-        // Ajuster la caméra pour voir la grille plate de dessus
-        camera.position.set(0, 3, 8);
+        // Ajuster la caméra pour voir la sphère 3D
+        camera.position.set(0, 0, 5);
         const controls = new OrbitControls(camera, containerRef.current!);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
@@ -94,7 +94,7 @@ export default function ThreeScene({ tileBiomes = {} }: ThreeSceneProps) {
 
             // Maintenant mettre à jour les biomes après le chargement des modèles
             if (Object.keys(tileBiomes).length > 0) {
-                await updatePlanetFlatBiomes(planet, tileBiomes);
+                await updatePlanetBiomes(planet, tileBiomes);
             }
 
             const ambientLight = new AmbientLight(0xffffff, 0.6);
@@ -112,6 +112,22 @@ export default function ThreeScene({ tileBiomes = {} }: ThreeSceneProps) {
                 const dt = (currentTime - lastTime) / 1000;
                 lastTime = currentTime;
                 controls.update();
+
+                // Animer les matériaux d'eau du biome Glacier
+                if (planetRef.current) {
+                    applyEmissivityToGlacierMaterials(planetRef.current);
+                    applyEmissivityToVolcanoMaterials(planetRef.current);
+
+                    const waterMaterials = findWaterMaterialsInScene(planetRef.current);
+                    if (waterMaterials.length > 0) {
+                        animateWaterMaterials(waterMaterials, dt);
+                    }
+
+                    const volcanoMaterials = findVolcanoMaterialsInScene(planetRef.current);
+                    if (volcanoMaterials.length > 0) {
+                        animateVolcanoEmissivity(volcanoMaterials, dt);
+                    }
+                }
 
                 rendererRef.current.render(sceneRef.current, cameraRef.current);
                 animationFrameRef.current = requestAnimationFrame(loop);
