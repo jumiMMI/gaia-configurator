@@ -19,8 +19,6 @@ export default function Home() {
     room: hasScanned ? roomName : "",
     canSendUpdate: () => false,
     onGameStart: (startTimestamp: number, gameDuration: number) => {
-      // Naviguer vers la page de jeu quand le host démarre
-      // Le timer sera démarré dans GameMobile avec le timestamp
       if (hasScanned && roomName) {
         router.replace({
           pathname: "/game",
