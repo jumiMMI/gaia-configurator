@@ -6,6 +6,7 @@ interface GameTimerContextType {
   isGameFinished: boolean;
   startGame: (startTimestamp?: number, gameDuration?: number) => void;
   resetTimer: () => void;
+  finishGame: () => void;
   formatTime: (seconds: number) => string;
 }
 
@@ -58,7 +59,7 @@ export function GameTimerProvider({ children }: { children: ReactNode }) {
   const startGame = (startTimestamp?: number, duration: number = 300) => {
     setIsGameFinished(false);
     setGameDuration(duration);
-    
+
     if (startTimestamp) {
       // Utiliser le timestamp du serveur pour synchronisation
       setGameStartTimestamp(startTimestamp);
@@ -81,6 +82,12 @@ export function GameTimerProvider({ children }: { children: ReactNode }) {
     setGameDuration(300);
   };
 
+  const finishGame = () => {
+    setIsTimerActive(false);
+    setIsGameFinished(true);
+    setTimeRemaining(0);
+  };
+
   return (
     <GameTimerContext.Provider
       value={{
@@ -89,6 +96,7 @@ export function GameTimerProvider({ children }: { children: ReactNode }) {
         isGameFinished,
         startGame,
         resetTimer,
+        finishGame,
         formatTime,
       }}
     >

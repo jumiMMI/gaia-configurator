@@ -61,7 +61,7 @@ export default function ThreeScene({ tileBiomes = {}, playerZones = null, onPlan
         // scene.background = new Color(0x101A26);
         // scene.background = new Color(0xffffff);
         sceneRef.current = scene;
-        const space = new Space();
+        const space = new Space(true);
         scene.add(space);
 
         const environmentMap = {
@@ -179,7 +179,7 @@ export default function ThreeScene({ tileBiomes = {}, playerZones = null, onPlan
             if (rendererRef.current) {
                 rendererRef.current.dispose();
             }
-            
+
             if (onPlanetRotationRef) {
                 onPlanetRotationRef.current = null;
             }

@@ -12,7 +12,7 @@ interface GameWebProps {
 export default function GameWeb({ roomName }: GameWebProps) {
   const navigate = useNavigate();
   const [showEndPopup, setShowEndPopup] = useState(false);
-  const { timeRemaining, isTimerActive, isGameFinished, startGame: startTimer, resetTimer, formatTime } = useGameTimer();
+  const { timeRemaining, isTimerActive, isGameFinished, startGame: startTimer, resetTimer, finishGame, formatTime } = useGameTimer();
 
   // Ref pour stocker le handler de rotation de ThreeScene
   const planetRotationHandlerRef = useRef<((velocityX: number, velocityY: number) => void) | null>(null);
@@ -52,6 +52,7 @@ export default function GameWeb({ roomName }: GameWebProps) {
   };
 
   const handleReplay = () => {
+    finishGame();
     setShowEndPopup(true);
   };
 
@@ -99,7 +100,7 @@ export default function GameWeb({ roomName }: GameWebProps) {
             <div className="game-web-stat-bar">
               <div
                 className="game-web-stat-fill"
-                style={{ width: `${stats?.environment.humidite || 0}%` }}
+                style={{ '--cursor-position': `${stats?.environment.humidite || 0}%` } as React.CSSProperties}
               />
             </div>
             <span className="game-web-stat-label">Hum</span>
@@ -110,7 +111,7 @@ export default function GameWeb({ roomName }: GameWebProps) {
             <div className="game-web-stat-bar">
               <div
                 className="game-web-stat-fill"
-                style={{ width: `${stats?.resourceScore.energie || 0}%` }}
+                style={{ '--cursor-position': `${stats?.resourceScore.energie || 0}%` } as React.CSSProperties}
               />
             </div>
             <span className="game-web-stat-label">NRJ</span>
@@ -121,7 +122,7 @@ export default function GameWeb({ roomName }: GameWebProps) {
             <div className="game-web-stat-bar">
               <div
                 className="game-web-stat-fill"
-                style={{ width: `${(stats?.environment.lumiere || 0) / 10}%` }}
+                style={{ '--cursor-position': `${(stats?.environment.lumiere || 0) / 10}%` } as React.CSSProperties}
               />
             </div>
             <span className="game-web-stat-label">Lum</span>
@@ -132,7 +133,7 @@ export default function GameWeb({ roomName }: GameWebProps) {
             <div className="game-web-stat-bar">
               <div
                 className="game-web-stat-fill"
-                style={{ width: `${stats?.resourceScore.oxygene || 0}%` }}
+                style={{ '--cursor-position': `${stats?.resourceScore.oxygene || 0}%` } as React.CSSProperties}
               />
             </div>
             <span className="game-web-stat-label">O₂</span>
@@ -143,7 +144,7 @@ export default function GameWeb({ roomName }: GameWebProps) {
             <div className="game-web-stat-bar">
               <div
                 className="game-web-stat-fill"
-                style={{ width: `${Math.min((stats?.environment.CO2 || 0) / 10, 100)}%` }}
+                style={{ '--cursor-position': `${Math.min((stats?.environment.CO2 || 0) / 10, 100)}%` } as React.CSSProperties}
               />
             </div>
             <span className="game-web-stat-label">CO₂</span>
@@ -154,7 +155,7 @@ export default function GameWeb({ roomName }: GameWebProps) {
             <div className="game-web-stat-bar">
               <div
                 className="game-web-stat-fill"
-                style={{ width: `${Math.min(Math.max((stats?.environment.temperature || 0) + 50, 0), 100)}%` }}
+                style={{ '--cursor-position': `${Math.min(Math.max((stats?.environment.temperature || 0) + 50, 0), 100)}%` } as React.CSSProperties}
               />
             </div>
             <span className="game-web-stat-label">°C</span>
@@ -165,7 +166,7 @@ export default function GameWeb({ roomName }: GameWebProps) {
             <div className="game-web-stat-bar">
               <div
                 className="game-web-stat-fill"
-                style={{ width: `${stats?.resourceScore.nourriture || 0}%` }}
+                style={{ '--cursor-position': `${stats?.resourceScore.nourriture || 0}%` } as React.CSSProperties}
               />
             </div>
             <span className="game-web-stat-label">Alim</span>
@@ -201,7 +202,7 @@ export default function GameWeb({ roomName }: GameWebProps) {
             className="game-web-action-button finished"
             onClick={handleReplay}
           >
-            TERRAFORMATION TERMINÉE
+            RETOUR AU MENU
           </button>
         )}
       </div>
@@ -223,10 +224,10 @@ export default function GameWeb({ roomName }: GameWebProps) {
 
       {/* Scène 3D en arrière-plan */}
       <div className="game-web-content">
-      <ThreeScene 
-          tileBiomes={tileBiomes} 
+        <ThreeScene
+          tileBiomes={tileBiomes}
           playerZones={playerZones}
-          onPlanetRotationRef={planetRotationHandlerRef} 
+          onPlanetRotationRef={planetRotationHandlerRef}
         />
       </div>
 
@@ -274,9 +275,9 @@ export default function GameWeb({ roomName }: GameWebProps) {
 
             <button
               className="game-web-end-button"
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/leaderboard')}
             >
-              Retour au menu
+              VOIR LE LEADERBOARD
             </button>
           </div>
         </div>
