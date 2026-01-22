@@ -25,7 +25,7 @@ export function createPartyClient(room: string, host: string) {
 }
 
 // Configuration PartyKit
-const PARTYKIT_HOST = process.env.EXPO_PUBLIC_PARTYKIT_HOST || "192.168.1.168:1999";
+const PARTYKIT_HOST = process.env.EXPO_PUBLIC_PARTYKIT_HOST || "10.137.97.42:1999";
 // const PARTYKIT_HOST = process.env.EXPO_PUBLIC_PARTYKIT_HOST || "127.0.0.1:1999";
 
 interface UsePlanetSyncOptions {

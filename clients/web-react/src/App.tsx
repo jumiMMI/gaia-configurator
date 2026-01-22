@@ -3,6 +3,7 @@ import Cinematic from './pages/Cinematic';
 import Game from './pages/Game';
 import Home from './pages/Home';
 import Room from './pages/Room';
+import End from './pages/End';
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/room/:roomName" element={<Room />} />
         <Route path="/game" element={<Game />} />
+        <Route path="/end" element={<End />} />
         <Route path="/cinematic" element={<Cinematic />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
