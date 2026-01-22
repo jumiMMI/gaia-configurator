@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react';
 // @ts-ignore
+import { AssetId } from '@/constants/AssetId';
+import ThreeAssetManager from '@/managers/ThreeAssetManager';
 import { BiomeData } from '@gaia/shared';
-import { AmbientLight, DirectionalLight, EquirectangularRefractionMapping, Group, LinearSRGBColorSpace, PerspectiveCamera, Scene, Texture, WebGLRenderer } from 'three';
+import { AmbientLight, DirectionalLight, Group, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { OrbitControls, RGBELoader } from 'three/examples/jsm/Addons.js';
 import { updateCameraPosition, useCameraControls } from './controls/CameraControls';
 import { animateVolcanoEmissivity, animateWaterMaterials, applyEmissivityToGlacierMaterials, applyEmissivityToVolcanoMaterials, findVolcanoMaterialsInScene, findWaterMaterialsInScene, loadAllBiomeModels } from './ThePlanet/biomes/BiomeModels';
 import createPlanet, { rotatePlanet, updatePlanetBiomes, updatePlayerZoneBorders } from './ThePlanet/Planet';
-import Sky from './ThePlanet/Sky';
-import Stars from './ThePlanet/Stars';
+import Space from './ThePlanet/Space';
 
 interface PlayerZoneData {
     playerId: string;
@@ -60,24 +61,21 @@ export default function ThreeScene({ tileBiomes = {}, playerZones = null, onPlan
         // scene.background = new Color(0x101A26);
         // scene.background = new Color(0xffffff);
         sceneRef.current = scene;
-        const sky = new Sky();
-        const stars = new Stars();
-        scene.add(sky);
-        scene.add(stars);
+        const space = new Space();
+        scene.add(space);
 
         const environmentMap = {
             intensity: 3,
-            texture: null as Texture | null,
+            texture: ThreeAssetManager.getRGBE(AssetId.THREE_HDR_SPACE),
         }
+        environmentMap.texture!.needsUpdate = true;
+        scene.environment = environmentMap.texture;
+        scene.environmentIntensity = environmentMap.intensity!;
 
-        rgbeLoader.load('/hdrs/space.hdr', (dataTexture) => {
-            dataTexture.mapping = EquirectangularRefractionMapping;
-            dataTexture.colorSpace = LinearSRGBColorSpace;
-            environmentMap.texture = dataTexture;
-            environmentMap.texture!.needsUpdate = true;
-            scene.environment = environmentMap.texture;
-            scene.environmentIntensity = environmentMap.intensity!;
-        });
+        // rgbeLoader.load('/hdrs/space.hdr', (dataTexture) => {
+        //     dataTexture.mapping = EquirectangularRefractionMapping;
+        //     dataTexture.colorSpace = LinearSRGBColorSpace;
+        // });
 
         const camera = new PerspectiveCamera(60, width / height, 0.01, 1000);
         updateCameraPosition(camera, cameraStateRef.current);
@@ -97,6 +95,9 @@ export default function ThreeScene({ tileBiomes = {}, playerZones = null, onPlan
         const controls = new OrbitControls(camera, containerRef.current!);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
+        controls.minDistance = 5;
+        controls.maxDistance = 20;
+        controls.maxPolarAngle = Math.PI;
         camera.lookAt(0, 0, 0);
 
         const init = async () => {
@@ -135,12 +136,12 @@ export default function ThreeScene({ tileBiomes = {}, playerZones = null, onPlan
                 if (planetRef.current) {
                     applyEmissivityToGlacierMaterials(planetRef.current);
                     applyEmissivityToVolcanoMaterials(planetRef.current);
-                    
+
                     const waterMaterials = findWaterMaterialsInScene(planetRef.current);
                     if (waterMaterials.length > 0) {
                         animateWaterMaterials(waterMaterials, dt);
                     }
-                    
+
                     const volcanoMaterials = findVolcanoMaterialsInScene(planetRef.current);
                     if (volcanoMaterials.length > 0) {
                         animateVolcanoEmissivity(volcanoMaterials, dt);
@@ -149,7 +150,7 @@ export default function ThreeScene({ tileBiomes = {}, playerZones = null, onPlan
 
                 rendererRef.current.render(sceneRef.current, cameraRef.current);
                 animationFrameRef.current = requestAnimationFrame(loop);
-                stars.update(dt);
+                space.update(dt);
             };
 
             loop();

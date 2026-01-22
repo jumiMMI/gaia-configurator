@@ -1,8 +1,8 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useGameTimer } from "../contexts/GameTimerContext";
 import { usePlanetSync } from "../party/client";
 import "../styles/GameWeb.css";
-import PlanetStats from "./threejs/ThePlanet/PlanetStats";
 import ThreeScene from "./threejs/ThreeScene";
 
 interface GameWebProps {
@@ -10,6 +10,8 @@ interface GameWebProps {
 }
 
 export default function GameWeb({ roomName }: GameWebProps) {
+  const navigate = useNavigate();
+  const [showEndPopup, setShowEndPopup] = useState(false);
   const { timeRemaining, isTimerActive, isGameFinished, startGame: startTimer, resetTimer, formatTime } = useGameTimer();
 
   // Ref pour stocker le handler de rotation de ThreeScene
@@ -21,9 +23,9 @@ export default function GameWeb({ roomName }: GameWebProps) {
     }
   }, []);
 
-  const { 
-    tileBiomes, 
-    isConnected, 
+  const {
+    tileBiomes,
+    isConnected,
     stats,
     sendBiomeUpdate,
     startGame: startGameServer,
@@ -50,61 +52,235 @@ export default function GameWeb({ roomName }: GameWebProps) {
   };
 
   const handleReplay = () => {
-    resetPlanet();
-    resetTimer();
+    setShowEndPopup(true);
   };
 
+  // Afficher la popup après 5 secondes quand le jeu est terminé
+  useEffect(() => {
+    if (isGameFinished) {
+      const timer = setTimeout(() => {
+        setShowEndPopup(true);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isGameFinished]);
+
+  // Calculer le pourcentage de progression du timer
+  const timerProgress = ((300 - timeRemaining) / 300) * 100;
+
+  // Date futuriste
+  const futureDate = "MER 15.03.3037";
 
   return (
     <div className="game-web-container">
-      <div className="game-web-header">
-        <h1 className="game-web-title">Room: {roomName}</h1>
-        <div className="game-web-header-right">
-          <div className="game-web-connection-status">
-            <div 
-              className={`game-web-status-dot ${isConnected ? 'connected' : 'disconnected'}`}
-            />
-            <span className="game-web-status-text">
-              {isConnected ? 'Connecté' : 'Déconnecté'}
-            </span>
+      {/* Header centré */}
+      <div className="game-web-header-center">
+        <h1 className="game-web-main-title">GAIA PROJECT</h1>
+        <p className="game-web-subtitle">
+          {!isTimerActive && !isGameFinished && "En attente de démarrage..."}
+          {isTimerActive && "Terraformation en cours..."}
+          {isGameFinished && "Terraformation terminée"}
+        </p>
+      </div>
+
+      {/* Date en haut à droite */}
+      <div className="game-web-date">
+        <span className="game-web-date-icon">▼</span>
+        <span className="game-web-date-text">{futureDate}</span>
+      </div>
+
+      {/* Panneau Données Biométriques à gauche */}
+      <div className="game-web-biometric-panel">
+        <h2 className="game-web-panel-title">DONNÉES<br />BIOMÉTRIQUES</h2>
+        <div className="game-web-biometric-stats">
+          <div className="game-web-stat-row">
+            <span className="game-web-stat-icon">💧</span>
+            <div className="game-web-stat-bar">
+              <div
+                className="game-web-stat-fill"
+                style={{ width: `${stats?.environment.humidite || 0}%` }}
+              />
+            </div>
+            <span className="game-web-stat-label">Hum</span>
           </div>
-          
-          {/* Timer et bouton Jouer */}
-          <div className="game-web-timer-container">
-            {!isTimerActive && !isGameFinished && (
-              <button 
-                className="game-web-button"
-                onClick={handleStartGame}
-                disabled={!roleReceived || !isConnected}
-              >
-                {roleReceived ? "Jouer à Gaia" : "En attente du rôle..."}
-              </button>
-            )}
-            {isTimerActive && (
-              <div className="game-web-timer-display">
-                <span className="game-web-timer-text">Temps restant: {formatTime(timeRemaining)}</span>
-              </div>
-            )}
-            {isGameFinished && (
-              <div className="game-web-finished">
-                <span className="game-web-finished-text">Temps écoulé !</span>
-                <button className="game-web-button" onClick={handleReplay}>Rejouer</button>
-              </div>
-            )}
+
+          <div className="game-web-stat-row">
+            <span className="game-web-stat-icon">⚡</span>
+            <div className="game-web-stat-bar">
+              <div
+                className="game-web-stat-fill"
+                style={{ width: `${stats?.resourceScore.energie || 0}%` }}
+              />
+            </div>
+            <span className="game-web-stat-label">NRJ</span>
+          </div>
+
+          <div className="game-web-stat-row">
+            <span className="game-web-stat-icon">☀️</span>
+            <div className="game-web-stat-bar">
+              <div
+                className="game-web-stat-fill"
+                style={{ width: `${(stats?.environment.lumiere || 0) / 10}%` }}
+              />
+            </div>
+            <span className="game-web-stat-label">Lum</span>
+          </div>
+
+          <div className="game-web-stat-row">
+            <span className="game-web-stat-icon">O₂</span>
+            <div className="game-web-stat-bar">
+              <div
+                className="game-web-stat-fill"
+                style={{ width: `${stats?.resourceScore.oxygene || 0}%` }}
+              />
+            </div>
+            <span className="game-web-stat-label">O₂</span>
+          </div>
+
+          <div className="game-web-stat-row">
+            <span className="game-web-stat-icon">☁️</span>
+            <div className="game-web-stat-bar">
+              <div
+                className="game-web-stat-fill"
+                style={{ width: `${Math.min((stats?.environment.CO2 || 0) / 10, 100)}%` }}
+              />
+            </div>
+            <span className="game-web-stat-label">CO₂</span>
+          </div>
+
+          <div className="game-web-stat-row">
+            <span className="game-web-stat-icon">🌡️</span>
+            <div className="game-web-stat-bar">
+              <div
+                className="game-web-stat-fill"
+                style={{ width: `${Math.min(Math.max((stats?.environment.temperature || 0) + 50, 0), 100)}%` }}
+              />
+            </div>
+            <span className="game-web-stat-label">°C</span>
+          </div>
+
+          <div className="game-web-stat-row">
+            <span className="game-web-stat-icon">🍎</span>
+            <div className="game-web-stat-bar">
+              <div
+                className="game-web-stat-fill"
+                style={{ width: `${stats?.resourceScore.nourriture || 0}%` }}
+              />
+            </div>
+            <span className="game-web-stat-label">Alim</span>
           </div>
         </div>
       </div>
-      
+
+      {/* Panneau Temps à droite */}
+      <div className="game-web-time-panel">
+        <h2 className="game-web-panel-title">TEMPS</h2>
+        <div className="game-web-timer-large">{formatTime(timeRemaining)}</div>
+        <div className="game-web-progress-bar">
+          <div
+            className="game-web-progress-fill"
+            style={{ width: `${timerProgress}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Bouton Terraformation terminée / Jouer */}
+      <div className="game-web-action-button-container">
+        {!isTimerActive && !isGameFinished && (
+          <button
+            className="game-web-action-button"
+            onClick={handleStartGame}
+            disabled={!roleReceived || !isConnected}
+          >
+            {roleReceived ? "DÉMARRER LA TERRAFORMATION" : "EN ATTENTE..."}
+          </button>
+        )}
+        {(isTimerActive || isGameFinished) && (
+          <button
+            className="game-web-action-button finished"
+            onClick={handleReplay}
+          >
+            TERRAFORMATION TERMINÉE
+          </button>
+        )}
+      </div>
+
+      {/* Timeline en bas */}
+      <div className="game-web-timeline">
+        <div className="game-web-timeline-bar">
+          {Array.from({ length: 60 }).map((_, i) => (
+            <div
+              key={i}
+              className={`game-web-timeline-tick ${i % 5 === 0 ? 'major' : ''} ${i < (60 - timeRemaining / 5) ? 'active' : ''}`}
+            />
+          ))}
+          <div className="game-web-timeline-marker" style={{ left: `${timerProgress}%` }}>
+            <div className="game-web-timeline-marker-triangle">▲</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Scène 3D en arrière-plan */}
       <div className="game-web-content">
-        <ThreeScene 
+      <ThreeScene 
           tileBiomes={tileBiomes} 
           playerZones={playerZones}
           onPlanetRotationRef={planetRotationHandlerRef} 
         />
-        <div className="game-web-stats-panel">
-          <PlanetStats stats={stats} />
-        </div>
       </div>
+
+      {/* Popup de fin */}
+      {showEndPopup && (
+        <div className="game-web-end-overlay">
+          <div className="game-web-end-popup">
+            <h1 className="game-web-end-title">TERRAFORMATION RÉUSSIE</h1>
+            <p className="game-web-end-score">Score : {stats?.environmentScore.global || 0}/100</p>
+
+            <p className="game-web-end-description">
+              Les biomes sont parfaitement répartis et interconnectés. La planète atteint un niveau de richesse écologique optimal : diversité élevée, ressources abondantes, climat régulier.
+            </p>
+
+            <div className="game-web-end-stats">
+              <div className="game-web-end-stat">
+                <span className="game-web-end-stat-icon">⚡</span>
+                <span className="game-web-end-stat-text">NRJ : {stats?.resourceScore.energie || 0}/100</span>
+              </div>
+              <div className="game-web-end-stat">
+                <span className="game-web-end-stat-icon">☁️</span>
+                <span className="game-web-end-stat-text">CO₂ : {Math.min((stats?.environment.CO2 || 0) / 10, 100).toFixed(0)}/100</span>
+              </div>
+              <div className="game-web-end-stat">
+                <span className="game-web-end-stat-icon">☀️</span>
+                <span className="game-web-end-stat-text">Lum : {((stats?.environment.lumiere || 0) / 10).toFixed(0)}/100</span>
+              </div>
+              <div className="game-web-end-stat">
+                <span className="game-web-end-stat-icon">O₂</span>
+                <span className="game-web-end-stat-text">O₂ : {stats?.resourceScore.oxygene || 0}/100</span>
+              </div>
+              <div className="game-web-end-stat">
+                <span className="game-web-end-stat-icon">💧</span>
+                <span className="game-web-end-stat-text">Hum : {stats?.environment.humidite.toFixed(0) || 0}/100</span>
+              </div>
+              <div className="game-web-end-stat">
+                <span className="game-web-end-stat-icon">🌡️</span>
+                <span className="game-web-end-stat-text">T : {Math.min(Math.max((stats?.environment.temperature || 0) + 50, 0), 100).toFixed(0)}/100</span>
+              </div>
+              <div className="game-web-end-stat game-web-end-stat-full">
+                <span className="game-web-end-stat-icon">🍎</span>
+                <span className="game-web-end-stat-text">Bouffe : {stats?.resourceScore.nourriture || 0}/100</span>
+              </div>
+            </div>
+
+            <button
+              className="game-web-end-button"
+              onClick={() => navigate('/')}
+            >
+              Retour au menu
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

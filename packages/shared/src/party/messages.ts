@@ -85,7 +85,7 @@ export interface UsersMessage {
 export interface StartGameMessage {
     type: 'START_GAME';
     startTimestamp: number; // Timestamp Unix en millisecondes du début du jeu
-    gameDuration: number; // Durée du jeu en secondes (par défaut 300)
+    gameDuration: number;
 }
 
 // Message d'assignation de tuiles (envoyé par le serveur à chaque client)
