@@ -3,9 +3,6 @@ import { Platform } from "react-native";
 
 const CLIENT_ID_KEY = "gaia_client_id";
 
-/**
- * Génère un ID unique aléatoire
- */
 function generateClientId(): string {
   const timestamp = Date.now().toString(36);
   const randomPart = Math.random().toString(36).substring(2, 15);

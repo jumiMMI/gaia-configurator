@@ -11,7 +11,6 @@ const HEX_RADIUS = 0.5;
  * Génère une couleur aléatoire pour les tuiles
  */
 function getRandomTileColor(): number {
-    // Générer des valeurs RGB aléatoires
     const r = Math.floor(Math.random() * 256);
     const g = Math.floor(Math.random() * 256);
     const b = Math.floor(Math.random() * 256);
@@ -21,6 +20,7 @@ function getRandomTileColor(): number {
 
 const placedModels: Map<number, THREE.Object3D> = new Map();
 const placedModelsFlat: Map<number, THREE.Object3D> = new Map();
+const playerZoneLines: Map<number, THREE.Line> = new Map();
 
 export default function createPlanet(): THREE.Group {
     const hexasphereData = getDefaultHexasphereData();
@@ -74,6 +74,13 @@ export default function createPlanet(): THREE.Group {
 //     planet.rotation.y += 0.001;
 // }
 
+export function rotatePlanet(planet: THREE.Group, velocityX: number, velocityY: number): void {
+    const rotationSpeed = 0.05;
+    planet.rotation.y -= velocityY * rotationSpeed;
+    const newRotationX = planet.rotation.x - velocityX * rotationSpeed;
+    planet.rotation.x = Math.max(-0.8, Math.min(0.8, newRotationX));
+}
+
 // update les biomes
 export async function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record<number, BiomeData>) {
     for (const child of planet.children) {
@@ -103,32 +110,27 @@ export async function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record
                     });
                     
                     if (model) {
-                        // Le terrain procédural est déjà positionné correctement dans createPrairieTerrain
                         planet.add(model);
                         placedModels.set(tileIndex, model);
                     }
                 }
             } else if (biomeData.nom === 'Océan') {
-                // Pour l'océan, utiliser la couleur bleue
                 child.visible = true;
                 child.material.color = new THREE.Color(biomeData.couleur);
                 child.position.y = 0;
                 child.material.depthWrite = true;
                 
-                // Supprimer le modèle existant s'il y en a un
                 const existing = placedModels.get(tileIndex);
                 if (existing) {
                     planet.remove(existing);
                     placedModels.delete(tileIndex);
                 }
             } else if (biomeData.nom === 'Volcan') {
-                // Pour le volcan, utiliser la couleur spécifiée #1E0C0DFF
                 child.visible = true;
                 child.material.color.setHex(VOLCAN_TILE_COLOR);
                 child.position.y = 0;
                 child.material.depthWrite = true;
             } else if (biomeData.nom === 'Glacier') {
-                // Pour le glacier, utiliser sa couleur définie
                 child.visible = true;
                 child.material.color = new THREE.Color(biomeData.couleur);
                 child.position.y = 0;
@@ -189,6 +191,68 @@ export async function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record
 }
 
 
+
+// Interface pour les zones de joueurs
+interface PlayerZoneData {
+  playerId: string;
+  assignedTiles: number[];
+  playerColor: string;
+}
+
+export function updatePlayerZoneBorders(
+  planet: THREE.Group,
+  playerZones: PlayerZoneData[]
+): void {
+
+  // Supprimer les anciennes lignes de contour
+  playerZoneLines.forEach((line) => {
+    planet.remove(line);
+    line.geometry.dispose();
+    if (line.material instanceof THREE.Material) {
+      line.material.dispose();
+    }
+  });
+  playerZoneLines.clear();
+
+  // Si aucune zone, on ne fait rien
+  if (!playerZones || playerZones.length === 0) {
+    return;
+  }
+
+  playerZones.forEach((zone) => {
+    const color = new THREE.Color(zone.playerColor);
+
+    zone.assignedTiles.forEach((tileIndex) => {
+      const tileMesh = planet.children.find(
+        (child) => child instanceof THREE.Mesh && child.userData.tileIndex === tileIndex
+      ) as THREE.Mesh | undefined;
+
+      if (!tileMesh || !tileMesh.userData.boundary) {
+        return;
+      }
+
+      const boundary = tileMesh.userData.boundary as Array<{ x: number; y: number; z: number }>;
+      
+      const points: number[] = [];
+      for (const point of boundary) {
+        points.push(point.x, point.y, point.z);
+      }
+      points.push(boundary[0].x, boundary[0].y, boundary[0].z);
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+
+      const material = new THREE.LineBasicMaterial({
+        color: color,
+      });
+
+      const line = new THREE.Line(geometry, material);
+
+      planet.add(line);
+      playerZoneLines.set(tileIndex, line);
+    });
+  });
+}
 
 function createTileGeometry(tile: any): THREE.BufferGeometry {
     const vertices: number[] = [];
@@ -348,7 +412,6 @@ export async function updatePlanetFlatBiomes(planet: THREE.Group, tileBiomes: Re
                     placedModelsFlat.delete(tileIndex);
                 }
             } else if (biomeData.nom === 'Volcan' || biomeData.nom === 'Glacier') {
-                // Pour le volcan et le glacier, cacher la tuile de base (seul le modèle 3D sera visible)
                 child.visible = false;
             } else {
                 child.visible = true;
@@ -357,7 +420,6 @@ export async function updatePlanetFlatBiomes(planet: THREE.Group, tileBiomes: Re
                 child.material.depthWrite = true;
             }
             
-            // Placer le modèle 3D seulement pour les biomes qui en ont besoin (pas Prairie, pas Océan)
             if (biomeData.nom !== 'Prairie' && biomeData.nom !== 'Océan' && !placedModelsFlat.has(tileIndex)) {
                 const model = await getModelForBiome(biomeData.nom);
                 
@@ -377,10 +439,9 @@ export async function updatePlanetFlatBiomes(planet: THREE.Group, tileBiomes: Re
         } else {
             child.material.color.setHex(DEFAULT_TILE_COLOR);
             child.visible = true;
-            child.position.y = 0; // Réinitialiser la position
+            child.position.y = 0;
             child.material.depthWrite = true; // Réinitialiser depthWrite
-            
-            // Supprimer le modèle existant
+
             const existing = placedModelsFlat.get(tileIndex);
             if (existing) {
                 planet.remove(existing);

@@ -4,7 +4,7 @@ interface GameTimerContextType {
   timeRemaining: number;
   isTimerActive: boolean;
   isGameFinished: boolean;
-  startGame: () => void;
+  startGame: (startTimestamp?: number, gameDuration?: number) => void;
   resetTimer: () => void;
   formatTime: (seconds: number) => string;
 }
@@ -15,6 +15,8 @@ export function GameTimerProvider({ children }: { children: ReactNode }) {
   const [timeRemaining, setTimeRemaining] = useState(300);
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [isGameFinished, setIsGameFinished] = useState(false);
+  const [gameStartTimestamp, setGameStartTimestamp] = useState<number | null>(null);
+  const [gameDuration, setGameDuration] = useState(300);
 
   // Formatage du temps (MM:SS)
   const formatTime = (seconds: number): string => {
@@ -23,34 +25,57 @@ export function GameTimerProvider({ children }: { children: ReactNode }) {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  const calculateTimeRemaining = (startTs: number, duration: number): number => {
+    const now = Date.now();
+    const elapsed = Math.floor((now - startTs) / 1000);
+    const remaining = duration - elapsed;
+    return Math.max(0, remaining);
+  };
+
   // Gérer le countdown du timer
   useEffect(() => {
-    if (isTimerActive && timeRemaining > 0) {
+    if (isTimerActive && gameStartTimestamp) {
+      const initialRemaining = calculateTimeRemaining(gameStartTimestamp, gameDuration);
+      setTimeRemaining(initialRemaining);
+
       const interval = setInterval(() => {
-        setTimeRemaining((prev) => {
-          if (prev <= 1) {
-            setIsTimerActive(false);
-            setIsGameFinished(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+        const remaining = calculateTimeRemaining(gameStartTimestamp, gameDuration);
+        if (remaining <= 0) {
+          setIsTimerActive(false);
+          setIsGameFinished(true);
+          setTimeRemaining(0);
+        } else {
+          setTimeRemaining(remaining);
+        }
+      }, 100); // Vérifier toutes les 100ms pour plus de précision
 
       return () => clearInterval(interval);
     }
-  }, [isTimerActive, timeRemaining]);
+  }, [isTimerActive, gameStartTimestamp, gameDuration]);
 
-  const startGame = () => {
-    setIsTimerActive(true);
+  const startGame = (startTimestamp?: number, duration: number = 300) => {
     setIsGameFinished(false);
-    setTimeRemaining(300);
+    setGameDuration(duration);
+    
+    if (startTimestamp) {
+      setGameStartTimestamp(startTimestamp);
+      const remaining = calculateTimeRemaining(startTimestamp, duration);
+      setTimeRemaining(remaining);
+      setIsTimerActive(true);
+    } else {
+
+      setGameStartTimestamp(Date.now());
+      setTimeRemaining(duration);
+      setIsTimerActive(true);
+    }
   };
 
   const resetTimer = () => {
     setIsTimerActive(false);
     setIsGameFinished(false);
     setTimeRemaining(300);
+    setGameStartTimestamp(null);
+    setGameDuration(300);
   };
 
   return (

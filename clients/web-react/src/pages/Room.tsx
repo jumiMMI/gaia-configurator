@@ -9,6 +9,7 @@ import "../styles/Room.css";
 function RoomContent({ roomName, onGameStart }: { roomName: string; onGameStart: () => void }) {
     const { startGame: startTimer } = useGameTimer();
     const [teamName, setTeamName] = useState("");
+    const [copied, setCopied] = useState(false);
     
     const { totalUsers, isConnected, users, isHost, startGame } = usePlanetSync({
         room: roomName,
@@ -22,12 +23,35 @@ function RoomContent({ roomName, onGameStart }: { roomName: string; onGameStart:
     const mobileParticipantsCount = users.filter(user => !user.isHost).length;
     const qrCodeValue = roomName;
 
+    const handleCopyCode = async () => {
+        try {
+            await navigator.clipboard.writeText(roomName);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error("Erreur lors de la copie:", err);
+        }
+    };
+
     return (
         <div className="room-container">
             <div className="room-content">
                 <div className="room-content-top">
                     <div className="qr-code-container">
                         <QRCodeSVG value={qrCodeValue} size={256} />
+                        <div className="room-code-container">
+                            <span className="room-code-label">Code de la room :</span>
+                            <div className="room-code-wrapper">
+                                <span className="room-code-text">{roomName}</span>
+                                <button 
+                                    className="copy-button" 
+                                    onClick={handleCopyCode}
+                                    title="Copier le code"
+                                >
+                                    {copied ? "✓" : "📋"}
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="right-section">

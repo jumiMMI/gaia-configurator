@@ -9,6 +9,7 @@ import {
   PlanetStatsData,
   ResetPlanetMessage,
   RoleMessage,
+  RotatePlanetMessage,
   SetBiomeMessage,
   StartGameMessage,
   UsersMessage
@@ -32,20 +33,23 @@ interface UsePlanetSyncOptions {
   onBiomeUpdate?: (tileIndex: number, biome: BiomeData) => void;
   canSendUpdate?: () => boolean;
   onPlacementError?: (tileIndex: number, message: string) => void;
-  onGameStart?: () => void; // Callback (message START_GAME)
+  onGameStart?: (startTimestamp: number, gameDuration: number) => void; // Callback (message START_GAME)
 }
 
 interface UsePlanetSyncReturn {
   tileBiomes: Record<number, BiomeData>;
   sendBiomeUpdate: (tileIndex: number, biome: BiomeData) => void;
+  sendPlanetRotation: (velocityX: number, velocityY: number) => void;
   resetPlanet: () => void;
   startGame: () => void;
   isConnected: boolean;
   stats: PlanetStatsData | null;
   assignedTiles: number[] | null;
+  playerColor: string | null; // Couleur du joueur reçue du serveur
   isHost: boolean;
   users: Array<{ id: string; name: string; isHost: boolean }>;
   totalUsers: number;
+  clientId: string | null;
 }
 
 /**
@@ -56,16 +60,17 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
   const [isConnected, setIsConnected] = useState(false);
   const [planetStats, setPlanetStats] = useState<PlanetStatsData | null>(null);
   const [assignedTiles, setAssignedTiles] = useState<number[] | null>(null);
+  const [playerColor, setPlayerColor] = useState<string | null>(null);
   const [isHost, setIsHost] = useState(false);
   const [users, setUsers] = useState<Array<{ id: string; name: string; isHost: boolean }>>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const socketRef = useRef<PartySocket | null>(null);
   const clientIdRef = useRef<string | null>(null);
-  
+
   const onBiomeUpdateRef = useRef(onBiomeUpdate);
   const onPlacementErrorRef = useRef(onPlacementError);
   const onGameStartRef = useRef(onGameStart);
-  
+
   useEffect(() => {
     onBiomeUpdateRef.current = onBiomeUpdate;
     onPlacementErrorRef.current = onPlacementError;
@@ -83,7 +88,7 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
     }
 
     let mounted = true;
-    
+
     const initClientId = async () => {
       const clientId = await getOrCreateClientId();
       if (mounted) {
@@ -102,11 +107,11 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
 
     socket.onopen = async () => {
       setIsConnected(true);
-      
+
       if (!clientIdRef.current) {
         clientIdRef.current = await getOrCreateClientId();
       }
-      
+
       const clientType = 'mobile';
 
       setTimeout(() => {
@@ -155,6 +160,7 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
         if (isResetPlanetMessage(data)) {
           setTileBiomes({});
           setAssignedTiles(null);
+          setPlayerColor(null);
           if (data.stats) {
             setPlanetStats(data.stats);
           }
@@ -198,6 +204,7 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
         if (isTileAssignmentMessage(data)) {
           setAssignedTiles(data.assignedTiles);
           setTotalUsers(data.totalUsers);
+          setPlayerColor(data.playerColor);
           return;
         }
 
@@ -210,7 +217,8 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
 
         // Réception du signal de démarrage du jeu
         if (isStartGameMessage(data)) {
-          onGameStartRef.current?.();
+          const startGameMsg = data as StartGameMessage;
+          onGameStartRef.current?.(startGameMsg.startTimestamp, startGameMsg.gameDuration);
           return;
         }
       } catch {
@@ -250,10 +258,23 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
     }));
   }, [canSendUpdate]);
 
+  const sendPlanetRotation = useCallback((velocityX: number, velocityY: number) => {
+    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    const message: RotatePlanetMessage = {
+      type: 'ROTATE_PLANET',
+      velocityX,
+      velocityY,
+    };
+
+    socketRef.current.send(JSON.stringify(message));
+  }, []);
+
 
   const resetPlanet = useCallback(() => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-      // console.warn("[PartyKit] Impossible d'envoyer: non connecté");
       return;
     }
 
@@ -284,13 +305,16 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
   return {
     tileBiomes,
     sendBiomeUpdate,
+    sendPlanetRotation,
     resetPlanet,
     startGame,
     isConnected,
     stats: planetStats,
     assignedTiles,
+    playerColor,
     isHost,
     users,
     totalUsers,
+    clientId: clientIdRef.current,
   };
 }

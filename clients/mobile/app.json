@@ -14,9 +14,9 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-          "foregroundImage": "./assets/2d-icons/Forest.png",
-          "backgroundImage": "./assets/2d-icons/Forest.png",
-          "monochromeImage": "./assets/2d-icons/Forest.png"
+        "foregroundImage": "./assets/2d-icons/Forest.png",
+        "backgroundImage": "./assets/2d-icons/Forest.png",
+        "monochromeImage": "./assets/2d-icons/Forest.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
@@ -27,7 +27,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-asset"
+      "expo-asset",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,

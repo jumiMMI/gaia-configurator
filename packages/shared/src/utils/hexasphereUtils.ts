@@ -98,19 +98,15 @@ export function calculerDimensionsGrille(
         };
     }
 
-    // Calcul initial : grille la plus proche d'un carré
     const sqrt = Math.sqrt(nombreTuiles);
     let largeur = Math.ceil(sqrt);
     let hauteur = Math.ceil(nombreTuiles / largeur);
 
-    // Ajuster selon le ratio souhaité (si différent de 1.0)
     if (ratio !== 1.0) {
         hauteur = Math.ceil(Math.sqrt(nombreTuiles / ratio));
         largeur = Math.ceil(nombreTuiles / hauteur);
     }
 
-    // Optimisation : tester quelques combinaisons autour de la valeur calculée
-    // pour trouver celle qui minimise le nombre de cellules vides
     let meilleureLargeur = largeur;
     let meilleureHauteur = hauteur;
     let minVides = largeur * hauteur - nombreTuiles;

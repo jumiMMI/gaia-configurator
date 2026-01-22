@@ -71,47 +71,29 @@ export async function loadAllBiomeModels(): Promise<void> {
                 const model = gltf.scene;
                 model.scale.set(1, 1, 1);
                 loadedModels.set(biomeName, model);
-                console.log(`Modèle ${biomeName} chargé`);
                 
                 if (biomeName === 'Glacier') {
-                    console.log('🔍 Recherche du matériau "water-glacier" dans le modèle Glacier...');
                     
                     const allMaterials = findAllMaterials(model);
-                    console.log(`📋 Matériaux trouvés dans Glacier: ${allMaterials.length}`);
                     
                     allMaterials.forEach((mat, index) => {
                         const matName = mat.name || (mat as any).userData?.name || 'Sans nom';
                         const matType = mat.type;
-                        console.log(`  [${index}] Nom: "${matName}", Type: ${matType}`);
                         
                         if (mat instanceof THREE.MeshStandardMaterial || 
                             mat instanceof THREE.MeshPhysicalMaterial) {
                             const standardMat = mat as THREE.MeshStandardMaterial;
-                            console.log(`      - normalMap: ${standardMat.normalMap ? 'OUI' : 'NON'}`);
-                            console.log(`      - transparent: ${standardMat.transparent}`);
-                            console.log(`      - opacity: ${standardMat.opacity}`);
                         }
                     });
                     
                     const waterMaterial = findMaterialByName(model, 'water-glacier');
                     
                     if (waterMaterial) {
-                        console.log('✅ Matériau "water-glacier" TROUVÉ !');
-                        console.log('   Détails du matériau:');
-                        console.log(`   - Type: ${waterMaterial.type}`);
-                        console.log(`   - Nom: ${waterMaterial.name}`);
-                        console.log(`   - NormalMap: ${waterMaterial.normalMap ? 'OUI' : 'NON'}`);
-                        if (waterMaterial.normalMap) {
-                            console.log(`   - NormalMap image: ${waterMaterial.normalMap.image?.src || 'N/A'}`);
-                        }
-                        
                         if (!waterMaterials.has('Glacier')) {
                             waterMaterials.set('Glacier', []);
                         }
                         waterMaterials.get('Glacier')!.push(waterMaterial);
                     } else {
-                        console.log('❌ Matériau "water-glacier" NON TROUVÉ');
-                        console.log('   Vérifiez que le matériau a bien ce nom dans Blender');
                     }
                 }
                 
@@ -287,29 +269,7 @@ export function applyEmissivityToVolcanoMaterials(scene: THREE.Object3D): void {
                         material.name.toLowerCase().includes('magma')
                     )) {
                         if (material instanceof THREE.MeshStandardMaterial || 
-                            material instanceof THREE.MeshPhysicalMaterial) {
-                            
-                            console.log('🌋 Matériau Volcan trouvé:', material.name);
-                            console.log('   - Type:', material.type);
-                            console.log('   - emissiveMap:', material.emissiveMap ? 'OUI ✅' : 'NON ❌');
-                            
-                            if (material.emissiveMap) {
-                                console.log('   - emissiveMap type:', material.emissiveMap.type);
-                                console.log('   - emissiveMap image:', material.emissiveMap.image ? 'OUI ✅' : 'NON ❌');
-                                if (material.emissiveMap.image) {
-                                    console.log('   - emissiveMap image src:', material.emissiveMap.image.src || 'N/A');
-                                    console.log('   - emissiveMap image width:', material.emissiveMap.image.width);
-                                    console.log('   - emissiveMap image height:', material.emissiveMap.image.height);
-                                }
-                                console.log('   - emissiveMap wrapS:', material.emissiveMap.wrapS);
-                                console.log('   - emissiveMap wrapT:', material.emissiveMap.wrapT);
-                            } else {
-                                console.log('   ⚠️ Pas de emissiveMap trouvée pour ce matériau');
-                            }
-                            
-                            console.log('   - emissive actuelle:', `(${material.emissive.r.toFixed(3)}, ${material.emissive.g.toFixed(3)}, ${material.emissive.b.toFixed(3)})`);
-                            console.log('   - emissiveIntensity actuelle:', material.emissiveIntensity);
-                            
+                            material instanceof THREE.MeshPhysicalMaterial) {    
                             material.emissive = new THREE.Color(0xff6600);
                             material.emissiveIntensity = 0.4;
                             processedVolcanoEmissiveMaterials.add(material);

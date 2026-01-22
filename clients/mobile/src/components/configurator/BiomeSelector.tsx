@@ -16,6 +16,7 @@ interface BiomeSelectorProps {
 interface AnimatedHexagonProps {
     biome: Biome;
     isPressed: boolean;
+    isSelected: boolean;
     onPress: () => void;
     onPressIn: () => void;
     onPressOut: () => void;
@@ -40,6 +41,7 @@ const HEX_SIZE = HEX_RADIUS * 2;
 function AnimatedHexagon({
     biome,
     isPressed,
+    isSelected,
     onPress,
     onPressIn,
     onPressOut,
@@ -79,16 +81,21 @@ function AnimatedHexagon({
                         <Stop offset="0%" stopColor="#f5f5f5" stopOpacity="1" />
                         <Stop offset="100%" stopColor="#e0e0e0" stopOpacity="1" />
                     </LinearGradient>
+                    {/* Gradient de glow quand sélectionné */}
+                    <RadialGradient id={`hexGlowGradient-${biome.nom}`} cx="50%" cy="50%" r="50%">
+                        <Stop offset="0%" stopColor={biome.couleur} stopOpacity="1" />
+                        <Stop offset="100%" stopColor={biome.couleur} stopOpacity="0.3" />
+                    </RadialGradient>
                 </Defs>
-                {/* Gradient radial en arrière-plan pour l'effet d'ombre */}
+
                 <AnimatedPolygon
                     points={getHexagonPoints(centerX, centerY, HEX_RADIUS + 2)}
                     fill={`url(#hexShadowGradient-${biome.nom})`}
                 />
                 <AnimatedPolygon
                     points={getHexagonPoints(centerX, centerY, HEX_RADIUS)}
-                    fill={`url(#hexGradient-${biome.nom})`}
-                    stroke="#333"
+                    fill={isSelected ? `url(#hexGlowGradient-${biome.nom})` : `url(#hexGradient-${biome.nom})`}
+                    stroke={isSelected ? biome.couleur : "#333"}
                     animatedProps={animatedProps}
                 />
             </Svg>
@@ -97,7 +104,7 @@ function AnimatedHexagon({
                     {(() => {
                         const IconComponent = biomeIcons[biome.nom];
                         if (typeof IconComponent === 'function') {
-                            return <IconComponent width={24} height={24} />;
+                            return <IconComponent width={24} height={24} color={isSelected ? "#ffffff" : "#494949"} />;
                         }
                         return null;
                     })()}
@@ -141,12 +148,14 @@ export default function BiomeSelector({
     const renderHexagon = (biome: Biome, key: string, isLast: boolean = false) => {
         const marginBottom = isLast ? 0 : VERTICAL_SPACING * 0.75 - HEX_SIZE;
         const isPressed = pressedBiome?.nom === biome.nom;
+        const isSelected = selectedBiome?.nom === biome.nom;
 
         return (
             <AnimatedHexagon
                 key={key}
                 biome={biome}
                 isPressed={isPressed}
+                isSelected={isSelected}
                 onPress={() => handleBiomePress(biome)}
                 onPressIn={() => handlePressIn(biome)}
                 onPressOut={handlePressOut}

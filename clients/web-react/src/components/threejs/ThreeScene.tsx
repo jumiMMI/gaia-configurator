@@ -5,15 +5,23 @@ import { AmbientLight, DirectionalLight, EquirectangularRefractionMapping, Group
 import { OrbitControls, RGBELoader } from 'three/examples/jsm/Addons.js';
 import { updateCameraPosition, useCameraControls } from './controls/CameraControls';
 import { animateVolcanoEmissivity, animateWaterMaterials, applyEmissivityToGlacierMaterials, applyEmissivityToVolcanoMaterials, findVolcanoMaterialsInScene, findWaterMaterialsInScene, loadAllBiomeModels } from './ThePlanet/biomes/BiomeModels';
-import createPlanet, { updatePlanetBiomes } from './ThePlanet/Planet';
+import createPlanet, { rotatePlanet, updatePlanetBiomes, updatePlayerZoneBorders } from './ThePlanet/Planet';
 import Sky from './ThePlanet/Sky';
 import Stars from './ThePlanet/Stars';
 
-interface ThreeSceneProps {
-    tileBiomes?: Record<number, BiomeData>;
+interface PlayerZoneData {
+    playerId: string;
+    assignedTiles: number[];
+    playerColor: string;
 }
 
-export default function ThreeScene({ tileBiomes = {} }: ThreeSceneProps) {
+interface ThreeSceneProps {
+    tileBiomes?: Record<number, BiomeData>;
+    playerZones?: PlayerZoneData[] | null;
+    onPlanetRotationRef?: React.MutableRefObject<((velocityX: number, velocityY: number) => void) | null>;
+}
+
+export default function ThreeScene({ tileBiomes = {}, playerZones = null, onPlanetRotationRef }: ThreeSceneProps) {
     const planetRef = useRef<Group | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -29,6 +37,13 @@ export default function ThreeScene({ tileBiomes = {} }: ThreeSceneProps) {
             updatePlanetBiomes(planetRef.current, tileBiomes).catch(console.error);
         }
     }, [tileBiomes]);
+
+    // Mettre à jour les contours des zones de tous les joueurs
+    useEffect(() => {
+        if (planetRef.current && playerZones && playerZones.length > 0) {
+            updatePlayerZoneBorders(planetRef.current, playerZones);
+        }
+    }, [playerZones]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -68,7 +83,6 @@ export default function ThreeScene({ tileBiomes = {} }: ThreeSceneProps) {
         updateCameraPosition(camera, cameraStateRef.current);
         cameraRef.current = camera;
 
-        // Sphère hexagonale 3D avec hexasphere
         let planet: Group;
         try {
             planet = createPlanet();
@@ -76,22 +90,18 @@ export default function ThreeScene({ tileBiomes = {} }: ThreeSceneProps) {
             scene.add(planet);
         } catch (error) {
             console.error('Erreur lors de la création de la planète:', error);
-            return; // Arrêter l'initialisation si la création échoue
+            return;
         }
 
-        // Ajuster la caméra pour voir la sphère 3D
         camera.position.set(0, 0, 5);
         const controls = new OrbitControls(camera, containerRef.current!);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         camera.lookAt(0, 0, 0);
 
-        // Fonction d'initialisation asynchrone
         const init = async () => {
-            // Charger les modèles AVANT de mettre à jour les biomes
             await loadAllBiomeModels();
 
-            // Maintenant mettre à jour les biomes après le chargement des modèles
             if (Object.keys(tileBiomes).length > 0) {
                 await updatePlanetBiomes(planet, tileBiomes);
             }
@@ -104,6 +114,15 @@ export default function ThreeScene({ tileBiomes = {} }: ThreeSceneProps) {
             scene.add(directionalLight);
 
             let lastTime = performance.now();
+
+            if (onPlanetRotationRef) {
+                const applyRotation = (velocityX: number, velocityY: number) => {
+                    if (!planetRef.current) return;
+                    rotatePlanet(planetRef.current, velocityX, velocityY);
+                };
+
+                onPlanetRotationRef.current = applyRotation;
+            }
 
             const loop = () => {
                 if (!rendererRef.current || !sceneRef.current || !cameraRef.current) return;
@@ -159,8 +178,12 @@ export default function ThreeScene({ tileBiomes = {} }: ThreeSceneProps) {
             if (rendererRef.current) {
                 rendererRef.current.dispose();
             }
+            
+            if (onPlanetRotationRef) {
+                onPlanetRotationRef.current = null;
+            }
         };
-    }, []);
+    }, [onPlanetRotationRef]);
 
     return (
         <div ref={containerRef} style={{ width: '100%', height: '100%' }}>

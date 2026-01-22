@@ -84,6 +84,8 @@ export interface UsersMessage {
 // Message pour démarrer le jeu (envoyé par le host)
 export interface StartGameMessage {
     type: 'START_GAME';
+    startTimestamp: number; // Timestamp Unix en millisecondes du début du jeu
+    gameDuration: number; // Durée du jeu en secondes (par défaut 300)
 }
 
 // Message d'assignation de tuiles (envoyé par le serveur à chaque client)
@@ -91,6 +93,19 @@ export interface TileAssignmentMessage {
     type: 'TILE_ASSIGNMENT';
     assignedTiles: number[]; // Liste des indices de tuiles assignées à ce client
     totalUsers: number; // Nombre total d'utilisateurs dans la room
+    playerColor: string; 
+}
+
+export interface PlayerZone {
+    playerId: string;
+    assignedTiles: number[];
+    playerColor: string;
+}
+
+export interface AllTileAssignmentsMessage {
+    type: 'ALL_TILE_ASSIGNMENTS';
+    playerZones: PlayerZone[];
+    totalUsers: number;
 }
 
 // Message d'erreur de placement (envoyé par le serveur si placement non autorisé)
@@ -107,6 +122,13 @@ export interface ClientInfoMessage {
     clientId: string; // ID persistant du client
 }
 
+// rotation planete
+export interface RotatePlanetMessage {
+    type: 'ROTATE_PLANET';
+    velocityX: number; // Tilt vertical (haut/bas)
+    velocityY: number; // Rotation horizontale (gauche/droite)
+}
+
 // tous les messages
 export type PartyMessage =
     | SetBiomeMessage
@@ -116,8 +138,10 @@ export type PartyMessage =
     | UsersMessage
     | StartGameMessage
     | TileAssignmentMessage
+    | AllTileAssignmentsMessage
     | PlacementErrorMessage
-    | ClientInfoMessage;
+    | ClientInfoMessage
+    | RotatePlanetMessage;
 
 // Type guard pour vérifier le type de message
 export function isSetBiomeMessage(msg: unknown): msg is SetBiomeMessage {
@@ -140,7 +164,14 @@ export function isTileAssignmentMessage(msg: unknown): msg is TileAssignmentMess
     return typeof msg === 'object' && msg !== null && (msg as TileAssignmentMessage).type === 'TILE_ASSIGNMENT';
 }
 
+export function isAllTileAssignmentsMessage(msg: unknown): msg is AllTileAssignmentsMessage {
+    return typeof msg === 'object' && msg !== null && (msg as AllTileAssignmentsMessage).type === 'ALL_TILE_ASSIGNMENTS';
+}
+
 export function isPlacementErrorMessage(msg: unknown): msg is PlacementErrorMessage {
     return typeof msg === 'object' && msg !== null && (msg as PlacementErrorMessage).type === 'PLACEMENT_ERROR';
 }
 
+export function isRotatePlanetMessage(msg: unknown): msg is RotatePlanetMessage {
+    return typeof msg === 'object' && msg !== null && (msg as RotatePlanetMessage).type === 'ROTATE_PLANET';
+}

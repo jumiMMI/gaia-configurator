@@ -1,14 +1,18 @@
 import {
   BiomeData,
+  isAllTileAssignmentsMessage,
   isPlacementErrorMessage,
   isResetPlanetMessage,
+  isRotatePlanetMessage,
   isSetBiomeMessage,
   isStartGameMessage,
   isSyncStateMessage,
   isTileAssignmentMessage,
   PlanetStatsData,
+  PlayerZone,
   ResetPlanetMessage,
   RoleMessage,
+  RotatePlanetMessage,
   SetBiomeMessage,
   StartGameMessage,
   UsersMessage
@@ -32,7 +36,8 @@ interface UsePlanetSyncOptions {
   onBiomeUpdate?: (tileIndex: number, biome: BiomeData) => void;
   canSendUpdate?: () => boolean; 
   onPlacementError?: (tileIndex: number, message: string) => void;
-  onGameStart?: () => void; // Callback (message START_GAME)
+  onGameStart?: (startTimestamp: number, gameDuration: number) => void; // Callback (message START_GAME)
+  onPlanetRotation?: (velocityX: number, velocityY: number) => void; // Callback (message ROTATE_PLANET)
 }
 
 interface UsePlanetSyncReturn {
@@ -43,6 +48,8 @@ interface UsePlanetSyncReturn {
   isConnected: boolean;
   stats: PlanetStatsData | null;
   assignedTiles: number[] | null; 
+  playerColor: string | null;
+  playerZones: PlayerZone[] | null; // Toutes les zones de tous les joueurs (pour le host)
   isHost: boolean;
   roleReceived: boolean; // Indique si le rôle a été reçu du serveur
   users: Array<{ id: string; name: string; isHost: boolean }>; 
@@ -52,11 +59,13 @@ interface UsePlanetSyncReturn {
 /**
  * Hook pour synchroniser l'état de la planète via PartyKit
  */
-export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementError, onGameStart }: UsePlanetSyncOptions): UsePlanetSyncReturn {
+export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementError, onGameStart, onPlanetRotation }: UsePlanetSyncOptions): UsePlanetSyncReturn {
   const [tileBiomes, setTileBiomes] = useState<Record<number, BiomeData>>({});
   const [isConnected, setIsConnected] = useState(false);
   const [planetStats, setPlanetStats] = useState<PlanetStatsData | null>(null);
   const [assignedTiles, setAssignedTiles] = useState<number[] | null>(null);
+  const [playerColor, setPlayerColor] = useState<string | null>(null);
+  const [playerZones, setPlayerZones] = useState<PlayerZone[] | null>(null);
   const [isHost, setIsHost] = useState(false);
   const [roleReceived, setRoleReceived] = useState(false); // Indique si le rôle a été reçu
   const [users, setUsers] = useState<Array<{ id: string; name: string; isHost: boolean }>>([]);
@@ -70,13 +79,15 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
   const onBiomeUpdateRef = useRef(onBiomeUpdate);
   const onPlacementErrorRef = useRef(onPlacementError);
   const onGameStartRef = useRef(onGameStart);
+  const onPlanetRotationRef = useRef(onPlanetRotation);
   
   // Mettre à jour les refs quand les callbacks changent
   useEffect(() => {
     onBiomeUpdateRef.current = onBiomeUpdate;
     onPlacementErrorRef.current = onPlacementError;
     onGameStartRef.current = onGameStart;
-  }, [onBiomeUpdate, onPlacementError, onGameStart]);
+    onPlanetRotationRef.current = onPlanetRotation;
+  }, [onBiomeUpdate, onPlacementError, onGameStart, onPlanetRotation]);
 
   useEffect(() => {
     let mounted = true;
@@ -136,6 +147,9 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        
+        // DEBUG: Log tous les messages reçus
+        console.log('[CLIENT WEB] Message received, type:', data.type);
 
         // Réception de l'état complet (à la connexion)
         if (isSyncStateMessage(data)) {
@@ -163,9 +177,18 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
         if (isResetPlanetMessage(data)) {
           setTileBiomes({});
           setAssignedTiles(null);
+          setPlayerColor(null);
+          setPlayerZones(null);
           if (data.stats) {
             setPlanetStats(data.stats);
           }
+          return;
+        }
+
+        // Réception d'un message de rotation de la planète
+        if (isRotatePlanetMessage(data)) {
+          const rotateMsg = data as RotatePlanetMessage;
+          onPlanetRotationRef.current?.(rotateMsg.velocityX, rotateMsg.velocityY);
           return;
         }
 
@@ -214,9 +237,17 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
           return;
         }
 
-        // Réception de l'assignation de tuiles
+        // Réception de l'assignation de tuiles (pour les joueurs mobiles)
         if (isTileAssignmentMessage(data)) {
           setAssignedTiles(data.assignedTiles);
+          setTotalUsers(data.totalUsers);
+          setPlayerColor(data.playerColor);
+          return;
+        }
+
+        // Réception de toutes les zones de tous les joueurs (pour le host web)
+        if (isAllTileAssignmentsMessage(data)) {
+          setPlayerZones(data.playerZones);
           setTotalUsers(data.totalUsers);
           return;
         }
@@ -229,7 +260,8 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
 
         // start game
         if (isStartGameMessage(data)) {
-          onGameStartRef.current?.();
+          const startGameMsg = data as StartGameMessage;
+          onGameStartRef.current?.(startGameMsg.startTimestamp, startGameMsg.gameDuration);
           return;
         }
       } catch {
@@ -318,6 +350,8 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
     isConnected,
     stats: planetStats,
     assignedTiles,
+    playerColor,
+    playerZones,
     isHost,
     roleReceived,
     users,

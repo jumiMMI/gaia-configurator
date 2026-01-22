@@ -109,12 +109,13 @@ export default class PlanetState {
         });
 
 
-        const divisor = this.totalTiles > 0 ? this.totalTiles : 1;
+        const divisor = biomeCount > 0 ? biomeCount : 1;
         
-        // Avec ce facteur, 10 déserts sur 100 tuiles donneront +7.5°C au lieu de +1.5°C
         const IMPACT_MULTIPLIER = 2.5;
 
-        const calculatedCO2 = INITIAL_STATE.CO2 + ((totalCO2 / divisor) * IMPACT_MULTIPLIER);
+        const CO2_MULTIPLIER = 3.0;
+
+        const calculatedCO2 = INITIAL_STATE.CO2 + ((totalCO2 / divisor) * CO2_MULTIPLIER);
         
         return {
             temperature: INITIAL_STATE.temperature + ((totalTemp / divisor) * IMPACT_MULTIPLIER),

@@ -5,14 +5,30 @@ global.Event = require("event-target-shim").Event;
 global.EventTarget = require("event-target-shim").EventTarget;
 global.CustomEvent = require("event-target-shim").CustomEvent;
 
+import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
+SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    "Omnium-Bold": require("../src/fonts/fonnts.com-Omnium_Bold.otf"),
+    "Omnium-ExtraBold": require("../src/fonts/fonnts.com-Omnium_ExtraBold.otf"),
+    "Omnium-Light": require("../src/fonts/fonnts.com-Omnium_Light.otf"),
+    "Digital-Desolation": require("../../../packages/shared/src/fonts/title/Digital-Desolation.ttf"),
+  });
+
   useEffect(() => {
-    // Charger la font pour le web
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  useEffect(() => {
     if (Platform.OS === "web" && typeof document !== "undefined") {
       const link = document.createElement("link");
       link.rel = "stylesheet";
@@ -24,6 +40,10 @@ export default function RootLayout() {
       };
     }
   }, []);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

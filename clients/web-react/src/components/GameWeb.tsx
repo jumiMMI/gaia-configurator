@@ -1,3 +1,4 @@
+import { useCallback, useRef } from "react";
 import { useGameTimer } from "../contexts/GameTimerContext";
 import { usePlanetSync } from "../party/client";
 import "../styles/GameWeb.css";
@@ -11,6 +12,15 @@ interface GameWebProps {
 export default function GameWeb({ roomName }: GameWebProps) {
   const { timeRemaining, isTimerActive, isGameFinished, startGame: startTimer, resetTimer, formatTime } = useGameTimer();
 
+  // Ref pour stocker le handler de rotation de ThreeScene
+  const planetRotationHandlerRef = useRef<((velocityX: number, velocityY: number) => void) | null>(null);
+
+  const handlePlanetRotation = useCallback((velocityX: number, velocityY: number) => {
+    if (planetRotationHandlerRef.current) {
+      planetRotationHandlerRef.current(velocityX, velocityY);
+    }
+  }, []);
+
   const { 
     tileBiomes, 
     isConnected, 
@@ -19,16 +29,17 @@ export default function GameWeb({ roomName }: GameWebProps) {
     startGame: startGameServer,
     isHost,
     roleReceived,
-    assignedTiles,
+    playerZones,
     totalUsers,
     resetPlanet,
   } = usePlanetSync({
     room: roomName,
     canSendUpdate: () => isTimerActive && !isGameFinished,
-    onGameStart: () => {
+    onGameStart: (startTimestamp: number, gameDuration: number) => {
       // Déclencher le timer quand le message START_GAME est reçu du serveur
-      startTimer();
+      startTimer(startTimestamp, gameDuration);
     },
+    onPlanetRotation: handlePlanetRotation,
   });
 
   const handleStartGame = () => {
@@ -42,6 +53,7 @@ export default function GameWeb({ roomName }: GameWebProps) {
     resetPlanet();
     resetTimer();
   };
+
 
   return (
     <div className="game-web-container">
@@ -84,7 +96,11 @@ export default function GameWeb({ roomName }: GameWebProps) {
       </div>
       
       <div className="game-web-content">
-        <ThreeScene tileBiomes={tileBiomes} />
+        <ThreeScene 
+          tileBiomes={tileBiomes} 
+          playerZones={playerZones}
+          onPlanetRotationRef={planetRotationHandlerRef} 
+        />
         <div className="game-web-stats-panel">
           <PlanetStats stats={stats} />
         </div>

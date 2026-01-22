@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import GameMobile from "../src/components/GameMobile";
@@ -7,6 +7,7 @@ import { GameTimerProvider } from "../src/contexts/GameTimerContext";
 
 export default function Game() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ roomName: string }>();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,9 +44,16 @@ export default function Game() {
     return null;
   }
   
+  const roomName = params.roomName;
+
+  if (!roomName) {
+    router.replace("/");
+    return null;
+  }
+
   return (
     <GameTimerProvider>
-      <GameMobile />
+      <GameMobile roomName={roomName} />
     </GameTimerProvider>
   );
 }

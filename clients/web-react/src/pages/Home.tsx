@@ -1,11 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import "../styles/Home.css";
+import { generateRoomCode } from "../utils/roomCode";
 
 export default function Home() {
   const navigate = useNavigate();
 
   const handleLaunchGame = () => {
-    const roomName = `room-${Math.floor(Math.random() * 10000)}`;
+    const roomName = generateRoomCode();
     navigate(`/room/${roomName}`);
   };
 

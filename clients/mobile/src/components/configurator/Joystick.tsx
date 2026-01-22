@@ -1,10 +1,11 @@
 import * as Haptics from "expo-haptics";
-import { StyleSheet, View } from "react-native";
+import { useEffect } from "react";
+import { AppState, StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
-    withSpring,
+    withSpring
 } from "react-native-reanimated";
 import { Circle, Defs, RadialGradient, Stop, Svg } from "react-native-svg";
 import { runOnJS } from "react-native-worklets";
@@ -22,16 +23,18 @@ export default function Joystick({ size = 95, maxRadius, onMove }: JoystickProps
     const center = baseSize / 2;
     const maxMoveRadius = maxRadius || joystickRadius * 0.6;
 
-    // Positions animées du joystick
     const translateX = useSharedValue(0);
     const translateY = useSharedValue(0);
     const wasAtEdge = useSharedValue(false);
 
-    const highlightRadius = joystickRadius * 0.35; // Taille du highlight
-    const highlightX = joystickRadius * 0.3; // Position X du highlight (vers la gauche)
-    const highlightY = joystickRadius * 0.3; // Position Y du highlight (vers le haut)
 
-    // Fonction wrapper pour la vibration haptique au début
+    const angleValue = useSharedValue(0);
+    const distanceValue = useSharedValue(0);
+
+    const highlightRadius = joystickRadius * 0.35; 
+    const highlightX = joystickRadius * 0.3; 
+    const highlightY = joystickRadius * 0.3; 
+
     const triggerStartHaptic = () => {
         try {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -77,11 +80,12 @@ export default function Joystick({ size = 95, maxRadius, onMove }: JoystickProps
             }
 
             const currentDistance = Math.sqrt(translateX.value ** 2 + translateY.value ** 2);
-            const normalizedDistance = currentDistance / maxMoveRadius; // 0 à 1
+            const normalizedDistance = currentDistance / maxMoveRadius;
             const angle = Math.atan2(translateY.value, translateX.value) * (180 / Math.PI);
-            const normalizedAngle = angle < 0 ? angle + 360 : angle; // 0 à 360
+            const normalizedAngle = angle < 0 ? angle + 360 : angle;
 
-            onMove?.(normalizedAngle, normalizedDistance);
+            angleValue.value = normalizedAngle;
+            distanceValue.value = normalizedDistance;
         })
         .onEnd(() => {
 
@@ -94,8 +98,25 @@ export default function Joystick({ size = 95, maxRadius, onMove }: JoystickProps
                 stiffness: 300,
             });
 
-            onMove?.(0, 0);
+            // Réinitialiser les valeurs quand le joystick est relâché
+            angleValue.value = 0;
+            distanceValue.value = 0;
         });
+
+    useEffect(() => {
+        if (!onMove) return;
+
+        const interval = setInterval(() => {
+            const angle = angleValue.value;
+            const distance = distanceValue.value;
+
+            if (angle !== 0 || distance !== 0) {
+                onMove(angle, distance);
+            }
+        }, 16);
+
+        return () => clearInterval(interval);
+    }, [onMove]);
 
     const animatedJoystickStyle = useAnimatedStyle(() => {
         return {
@@ -105,6 +126,19 @@ export default function Joystick({ size = 95, maxRadius, onMove }: JoystickProps
             ],
         };
     });
+
+    useEffect(() => {
+        const appStateListener = AppState.addEventListener('change', (nextAppState) => {
+            if (nextAppState === 'active') {
+                angleValue.value = 0;
+                distanceValue.value = 0;
+            }
+        });
+
+        return () => {
+            appStateListener.remove();
+        };
+    }, []);
 
     return (
         <View style={styles.container}>
@@ -126,7 +160,6 @@ export default function Joystick({ size = 95, maxRadius, onMove }: JoystickProps
                         />
                     </Svg>
 
-                    {/* Joystick animé (bouton) centré sur la base */}
                     <Animated.View style={[styles.joystickContainer, animatedJoystickStyle]}>
                         <Svg width={baseSize} height={baseSize}>
                             <Defs>

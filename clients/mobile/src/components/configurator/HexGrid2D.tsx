@@ -3,7 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { LayoutChangeEvent, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { clamp, useAnimatedStyle, useSharedValue, withDecay } from "react-native-reanimated";
-import { Polygon, Svg } from "react-native-svg";
+import { Defs, Polygon, RadialGradient, Stop, Svg } from "react-native-svg";
+import { biomeIcons } from "../../domain/biomeIcons";
 
 
 const SQRT3 = Math.sqrt(3);
@@ -252,6 +253,24 @@ export default function HexGrid2D({
                             height={svgHeight}
                         >
                     
+                    <Defs>
+                        {grille.flat().map((biome, index) => {
+                            if (!biome) return null;
+                            return (
+                                <RadialGradient
+                                    key={`gradient-${index}-${biome.nom}`}
+                                    id={`glowGradient-${index}`}
+                                    cx="50%"
+                                    cy="50%"
+                                    r="50%"
+                                >
+                                    <Stop offset="0%" stopColor="#1a1a1a" stopOpacity="1" />
+                                    <Stop offset="60%" stopColor={biome.couleur} stopOpacity="0.2" />
+                                    <Stop offset="100%" stopColor={biome.couleur} stopOpacity="0.8" />
+                                </RadialGradient>
+                            );
+                        })}
+                    </Defs>
                     {grille.map((row, y) =>
                         row.map((biome, x) => {
                             const offsetX = y % 2 === 1 ? hexWidth / 2 : 0;
@@ -263,9 +282,13 @@ export default function HexGrid2D({
                             const isAssigned = assignedTiles === null || (tileIndex >= 0 && assignedTiles.includes(tileIndex));
                             const isAvailable = isTile && isAssigned;
 
+                            // Calculer l'index flat pour le gradient
+                            const flatIndex = y * (dimensions?.largeur || 0) + x;
+
                             let fillColor = "#1a1a1a";
+                            let usesGradient = false;
                             if (biome) {
-                                fillColor = biome.couleur;
+                                usesGradient = true;
                             } else if (isTile) {
                                 fillColor = isAssigned ? "#2a2a2a" : "#1a1a1a";
                             }
@@ -274,7 +297,7 @@ export default function HexGrid2D({
                                 <Polygon
                                     key={`${x}-${y}`}
                                     points={getHexagonPoints(centerX, centerY, hexRadius)}
-                                    fill={fillColor}
+                                    fill={usesGradient ? `url(#glowGradient-${flatIndex})` : fillColor}
                                     stroke="#fafafa"
                                     strokeWidth={1}
                                     opacity={isAvailable ? 1 : 0.5}
@@ -307,6 +330,10 @@ export default function HexGrid2D({
                             const isDisabled = disabled || !isAssigned;
                             const touchSize = hexRadius * 1.5;
 
+                            // Récupérer l'icône du biome si présent
+                            const IconComponent = biome ? biomeIcons[biome.nom] : null;
+                            const iconSize = hexRadius * 0.9;
+
                             return (
                                 <TouchableOpacity
                                     key={`touch-${x}-${y}`}
@@ -318,11 +345,17 @@ export default function HexGrid2D({
                                         height: touchSize,
                                         borderRadius: touchSize / 2,
                                         opacity: isDisabled ? 0.3 : 1,
+                                        justifyContent: "center",
+                                        alignItems: "center",
                                     }}
                                     onPress={() => handleCellPress(x, y)}
                                     activeOpacity={isDisabled ? 1 : 0.7}
                                     disabled={isDisabled}
-                                />
+                                >
+                                    {IconComponent && (
+                                        <IconComponent width={iconSize} height={iconSize} color="#ffffff" />
+                                    )}
+                                </TouchableOpacity>
                             );
                         })
                     )}

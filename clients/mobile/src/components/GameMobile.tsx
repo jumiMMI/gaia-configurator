@@ -1,10 +1,11 @@
 import { Biome, getDefaultHexasphereData } from "@gaia/shared";
 import * as Haptics from "expo-haptics";
-import { useEffect, useState } from "react";
-import { Alert, Image, LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Alert, Image, ImageBackground, LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useGameTimer } from "../contexts/GameTimerContext";
 import { usePlanetSync } from "../party/client";
+import { getPlayerBorderImage, getPlayerColor } from "../utils/playerColors";
 import BiomeSelector from "./configurator/BiomeSelector";
 import HexGrid2D from "./configurator/HexGrid2D";
 import Joystick from "./configurator/Joystick";
@@ -31,23 +32,52 @@ export default function GameMobile({ roomName }: GameMobileProps) {
   const {
     tileBiomes,
     sendBiomeUpdate,
+    sendPlanetRotation,
     resetPlanet,
     isConnected,
     startGame: startGameServer,
     assignedTiles,
+    playerColor: playerColorFromServer,
     isHost,
     totalUsers,
+    users,
+    clientId,
   } = usePlanetSync({
     room: roomName,
     canSendUpdate: () => isTimerActive && !isGameFinished,
     onPlacementError: (tileIndex, message) => {
       Alert.alert("Placement non autorisé", message);
     },
-    onGameStart: () => {
-      startTimer();
+    onGameStart: (startTimestamp: number, gameDuration: number) => {
+      startTimer(startTimestamp, gameDuration);
     },
   });
 
+
+  // Calculer l'index du joueur actuel pour déterminer son image de bordure
+  const currentUserIndex = useMemo(() => {
+    if (!clientId) return 0;
+
+    const players = users.filter(u => !u.isHost);
+
+
+    const ourIndex = players.findIndex(u => u.id === clientId);
+
+    return ourIndex >= 0 ? ourIndex : 0;
+  }, [users, clientId]);
+
+  // Obtenir l'image de bordure du joueur actuel
+  const playerBorderImage = useMemo(() => {
+    return getPlayerBorderImage(currentUserIndex);
+  }, [currentUserIndex]);
+
+
+  const playerColor = useMemo(() => {
+    if (playerColorFromServer) {
+      return playerColorFromServer;
+    }
+    return getPlayerColor(currentUserIndex);
+  }, [playerColorFromServer, currentUserIndex]);
 
 
   const usedTilesCount = Object.keys(tileBiomes).length;
@@ -107,6 +137,14 @@ export default function GameMobile({ roomName }: GameMobileProps) {
     setSettingsWidth(event.nativeEvent.layout.width);
   };
 
+  const handleJoystickMove = (angle: number, distance: number) => {
+    const angleRad = angle * (Math.PI / 180);
+    // Décomposer en composantes X (tilt vertical) et Y (rotation horizontale)
+    const velocityX = Math.sin(angleRad) * distance; // Haut/Bas -> tilt
+    const velocityY = Math.cos(angleRad) * distance; // Gauche/Droite -> rotation
+    sendPlanetRotation(velocityX, velocityY);
+  };
+
   // Calculer la largeur disponible pour la grille
   useEffect(() => {
     if (containerWidth > 0 && settingsWidth > 0) {
@@ -142,9 +180,13 @@ export default function GameMobile({ roomName }: GameMobileProps) {
       )}
 
       <View style={styles.gameZoneContainer}>
-        <View style={styles.gameZone}>
+        <ImageBackground
+          source={playerBorderImage}
+          style={styles.gameZone}
+          resizeMode="stretch"
+        >
           {/* Timer */}
-          <View style={styles.timerContainer}>
+          <View style={[styles.timerContainer, { zIndex: 1, position: 'relative' }]}>
             {!isTimerActive && !isGameFinished && (
               <>
                 <Text style={styles.timerText}>En attente de démarrage...</Text>
@@ -198,7 +240,7 @@ export default function GameMobile({ roomName }: GameMobileProps) {
               assignedTiles={assignedTiles}
             />
           </View>
-        </View>
+        </ImageBackground>
       </View>
 
       <View style={styles.bottomContainer}>
@@ -211,13 +253,13 @@ export default function GameMobile({ roomName }: GameMobileProps) {
           </View>
 
           <View style={styles.dotsContainer}>
-            <Image 
-              source={require("../../assets/2d-icons/dots-remote.png")} 
+            <Image
+              source={require("../../assets/2d-icons/dots-remote.png")}
               style={styles.dotImage}
               resizeMode="contain"
             />
-            <Image 
-              source={require("../../assets/2d-icons/dots-remote.png")} 
+            <Image
+              source={require("../../assets/2d-icons/dots-remote.png")}
               style={[styles.dotImage, styles.dotImageFlipped]}
               resizeMode="contain"
             />
@@ -239,13 +281,13 @@ export default function GameMobile({ roomName }: GameMobileProps) {
                   onPressOut={handleFinishButtonRelease}
                 >
                   <Animated.View style={[styles.finishButtonInner, finishButtonAnimatedStyle]}>
-             
+
                   </Animated.View>
                 </TouchableOpacity>
                 <Text style={styles.finishButtonText}>terminer</Text>
               </View>
 
-              <Joystick />
+              <Joystick onMove={handleJoystickMove} />
             </View>
           </View>
         </View>
@@ -451,26 +493,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   gameZone: {
-    backgroundColor: "#000",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    borderBottomLeftRadius: 15,
-    borderBottomRightRadius: 15,
+    backgroundColor: "transparent",
     position: "relative",
-    borderColor: "black",
-    borderWidth: 2,
     paddingTop: 20,
     alignItems: "center",
-    // Shadow pour iOS
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
-    // Shadow pour Android
-    elevation: 8,
+    overflow: "hidden",
   },
   timerContainer: {
     padding: 12,
