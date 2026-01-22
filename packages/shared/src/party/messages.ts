@@ -81,18 +81,31 @@ export interface UsersMessage {
     }>;
 }
 
+// Message pour indiquer qu'un joueur est prêt (envoyé par les clients mobiles)
+export interface ReadyMessage {
+    type: 'READY';
+}
+
 // Message pour démarrer le jeu (envoyé par le host)
 export interface StartGameMessage {
     type: 'START_GAME';
-    startTimestamp: number; // Timestamp Unix en millisecondes du début du jeu
-    gameDuration: number;
+    startTimestamp?: number;
+    gameDuration?: number;
+}
+
+// Message avec l'état des joueurs prêts (envoyé par le serveur au host web)
+export interface PlayersReadyMessage {
+    type: 'PLAYERS_READY';
+    readyPlayers: string[]; // Liste des clientId prêts
+    totalPlayers: number; // Nombre total de joueurs (non-host)
+    allReady: boolean; // Tous les joueurs sont prêts
 }
 
 // Message d'assignation de tuiles (envoyé par le serveur à chaque client)
 export interface TileAssignmentMessage {
     type: 'TILE_ASSIGNMENT';
-    assignedTiles: number[]; // Liste des indices de tuiles assignées à ce client
-    totalUsers: number; // Nombre total d'utilisateurs dans la room
+    assignedTiles: number[];
+    totalUsers: number;
     playerColor: string; 
 }
 
@@ -136,12 +149,14 @@ export type PartyMessage =
     | ResetPlanetMessage
     | RoleMessage
     | UsersMessage
+    | ReadyMessage
     | StartGameMessage
     | TileAssignmentMessage
     | AllTileAssignmentsMessage
     | PlacementErrorMessage
     | ClientInfoMessage
-    | RotatePlanetMessage;
+    | RotatePlanetMessage
+    | PlayersReadyMessage;
 
 // Type guard pour vérifier le type de message
 export function isSetBiomeMessage(msg: unknown): msg is SetBiomeMessage {
@@ -174,4 +189,12 @@ export function isPlacementErrorMessage(msg: unknown): msg is PlacementErrorMess
 
 export function isRotatePlanetMessage(msg: unknown): msg is RotatePlanetMessage {
     return typeof msg === 'object' && msg !== null && (msg as RotatePlanetMessage).type === 'ROTATE_PLANET';
+}
+
+export function isReadyMessage(msg: unknown): msg is ReadyMessage {
+    return typeof msg === 'object' && msg !== null && (msg as ReadyMessage).type === 'READY';
+}
+
+export function isPlayersReadyMessage(msg: unknown): msg is PlayersReadyMessage {
+    return typeof msg === 'object' && msg !== null && (msg as PlayersReadyMessage).type === 'PLAYERS_READY';
 }

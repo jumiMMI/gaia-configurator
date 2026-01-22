@@ -54,7 +54,6 @@ export default function GameMobile({ roomName }: GameMobileProps) {
   });
 
 
-  // Calculer l'index du joueur actuel pour déterminer son image de bordure
   const currentUserIndex = useMemo(() => {
     if (!clientId) return 0;
 
@@ -139,9 +138,8 @@ export default function GameMobile({ roomName }: GameMobileProps) {
 
   const handleJoystickMove = (angle: number, distance: number) => {
     const angleRad = angle * (Math.PI / 180);
-    // Décomposer en composantes X (tilt vertical) et Y (rotation horizontale)
-    const velocityX = Math.sin(angleRad) * distance; // Haut/Bas -> tilt
-    const velocityY = Math.cos(angleRad) * distance; // Gauche/Droite -> rotation
+    const velocityX = Math.sin(angleRad) * distance;
+    const velocityY = Math.cos(angleRad) * distance;
     sendPlanetRotation(velocityX, velocityY);
   };
 
@@ -149,7 +147,7 @@ export default function GameMobile({ roomName }: GameMobileProps) {
   useEffect(() => {
     if (containerWidth > 0 && settingsWidth > 0) {
       const gap = 12;
-      const paddingHorizontal = 15 * 2; // padding left + right
+      const paddingHorizontal = 15 * 2;
       const availableWidth = containerWidth - settingsWidth - gap - paddingHorizontal;
       setGridMaxWidth(Math.max(0, availableWidth));
     }

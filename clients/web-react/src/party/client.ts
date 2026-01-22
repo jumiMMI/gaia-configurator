@@ -2,6 +2,7 @@ import {
   BiomeData,
   isAllTileAssignmentsMessage,
   isPlacementErrorMessage,
+  isPlayersReadyMessage,
   isResetPlanetMessage,
   isRotatePlanetMessage,
   isSetBiomeMessage,
@@ -9,6 +10,7 @@ import {
   isSyncStateMessage,
   isTileAssignmentMessage,
   PlanetStatsData,
+  PlayersReadyMessage,
   PlayerZone,
   ResetPlanetMessage,
   RoleMessage,
@@ -49,11 +51,13 @@ interface UsePlanetSyncReturn {
   stats: PlanetStatsData | null;
   assignedTiles: number[] | null; 
   playerColor: string | null;
-  playerZones: PlayerZone[] | null; // Toutes les zones de tous les joueurs (pour le host)
+  playerZones: PlayerZone[] | null;
   isHost: boolean;
-  roleReceived: boolean; // Indique si le rôle a été reçu du serveur
+  roleReceived: boolean;
   users: Array<{ id: string; name: string; isHost: boolean }>; 
   totalUsers: number;
+  readyPlayers: string[];
+  allPlayersReady: boolean;
 }
 
 /**
@@ -70,6 +74,8 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
   const [roleReceived, setRoleReceived] = useState(false); // Indique si le rôle a été reçu
   const [users, setUsers] = useState<Array<{ id: string; name: string; isHost: boolean }>>([]);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [readyPlayers, setReadyPlayers] = useState<string[]>([]);
+  const [allPlayersReady, setAllPlayersReady] = useState(false);
   const socketRef = useRef<PartySocket | null>(null);
   const clientIdRef = useRef<string | null>(null);
   const roleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -179,6 +185,8 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
           setAssignedTiles(null);
           setPlayerColor(null);
           setPlayerZones(null);
+          setReadyPlayers([]);
+          setAllPlayersReady(false);
           if (data.stats) {
             setPlanetStats(data.stats);
           }
@@ -226,7 +234,7 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
             if (prevUsersStr !== newUsersStr) {
               return usersMsg.users;
             }
-            return prevUsers; // Pas de changement, garder la référence précédente
+            return prevUsers;
           });
           setTotalUsers((prevTotal) => {
             if (prevTotal !== usersMsg.users.length) {
@@ -237,7 +245,6 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
           return;
         }
 
-        // Réception de l'assignation de tuiles (pour les joueurs mobiles)
         if (isTileAssignmentMessage(data)) {
           setAssignedTiles(data.assignedTiles);
           setTotalUsers(data.totalUsers);
@@ -245,23 +252,32 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
           return;
         }
 
-        // Réception de toutes les zones de tous les joueurs (pour le host web)
         if (isAllTileAssignmentsMessage(data)) {
           setPlayerZones(data.playerZones);
           setTotalUsers(data.totalUsers);
           return;
         }
 
-        // une erreur de placement
         if (isPlacementErrorMessage(data)) {
           onPlacementErrorRef.current?.(data.tileIndex, data.message);
+          return;
+        }
+
+        if (isPlayersReadyMessage(data)) {
+          const readyMsg = data as PlayersReadyMessage;
+          setReadyPlayers(readyMsg.readyPlayers);
+          setAllPlayersReady(readyMsg.allReady);
           return;
         }
 
         // start game
         if (isStartGameMessage(data)) {
           const startGameMsg = data as StartGameMessage;
-          onGameStartRef.current?.(startGameMsg.startTimestamp, startGameMsg.gameDuration);
+          const timestamp = startGameMsg.startTimestamp ?? Date.now();
+          const duration = startGameMsg.gameDuration ?? 300;
+          setReadyPlayers([]);
+          setAllPlayersReady(false);
+          onGameStartRef.current?.(timestamp, duration);
           return;
         }
       } catch {
@@ -356,6 +372,8 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
     roleReceived,
     users,
     totalUsers,
+    readyPlayers,
+    allPlayersReady,
   };
 }
 
