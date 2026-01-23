@@ -31,7 +31,8 @@ export function createPartyClient(room: string, host: string) {
 }
 
 // Configuration PartyKit
-const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST || "10.137.97.63:1999";
+// const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST || "10.137.97.63:1999";
+const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST || "192.168.1.56:1999";
 
 interface UsePlanetSyncOptions {
   room: string;
@@ -135,7 +136,6 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
         }
       }, 100);
 
-      // Timeout pour détecter si le rôle n'arrive pas après 2 secondes
       roleTimeoutRef.current = setTimeout(() => {
         if (!roleReceivedRef.current) {
           // Sur web-react, on est toujours web, donc on devient host par défaut
