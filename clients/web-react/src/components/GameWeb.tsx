@@ -195,9 +195,9 @@ export default function GameWeb({ roomName }: GameWebProps) {
             onClick={handleStartGame}
             disabled={!roleReceived || !isConnected || !allPlayersReady}
           >
-            {!roleReceived || !isConnected 
-              ? "EN ATTENTE..." 
-              : !allPlayersReady 
+            {!roleReceived || !isConnected
+              ? "EN ATTENTE..."
+              : !allPlayersReady
                 ? `EN ATTENTE DE ${totalUsers - readyPlayers.length} JOUEUR(S)...`
                 : "DÉMARRER LA TERRAFORMATION"}
           </button>
@@ -207,7 +207,7 @@ export default function GameWeb({ roomName }: GameWebProps) {
             className="game-web-action-button finished"
             onClick={handleReplay}
           >
-            RETOUR AU MENU
+            Valider la terraformation
           </button>
         )}
       </div>
@@ -282,7 +282,7 @@ export default function GameWeb({ roomName }: GameWebProps) {
               className="game-web-end-button"
               onClick={() => navigate('/leaderboard')}
             >
-              VOIR LE LEADERBOARD
+              RETOUR AU MENU
             </button>
           </div>
         </div>

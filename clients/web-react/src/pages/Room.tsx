@@ -77,7 +77,7 @@ function RoomContent({ roomName, onGameStart }: { roomName: string; onGameStart:
         };
     }, []);
 
-    const { totalUsers, isConnected, users, isHost, startGame } = usePlanetSync({
+    const { totalUsers, isConnected, users, isHost, startGame, readyPlayers, allPlayersReady } = usePlanetSync({
         room: roomName,
         onGameStart: () => {
             // Démarrer le timer et afficher le jeu
@@ -87,6 +87,7 @@ function RoomContent({ roomName, onGameStart }: { roomName: string; onGameStart:
     });
 
     const mobileParticipantsCount = users.filter(user => !user.isHost).length;
+    const readyPlayersCount = readyPlayers.length;
     const qrCodeValue = roomName;
 
     return (
@@ -135,7 +136,13 @@ function RoomContent({ roomName, onGameStart }: { roomName: string; onGameStart:
                                     <div className="room-participants-info">
                                         <span className="room-participants-icon">▼</span>
                                         <span className="room-participants-text">
-                                            Nombre de participants — {isConnected ? mobileParticipantsCount : "..."}/4
+                                            Joueurs connectés — {isConnected ? mobileParticipantsCount : "..."} (4 max)
+                                        </span>
+                                    </div>
+                                    <div className="room-participants-info">
+                                        <span className="room-participants-icon">●</span>
+                                        <span className="room-participants-text">
+                                            Joueurs prêts — {isConnected ? readyPlayersCount : "..."}/{isConnected ? mobileParticipantsCount : 0} (1 min)
                                         </span>
                                     </div>
                                 </div>
@@ -147,7 +154,7 @@ function RoomContent({ roomName, onGameStart }: { roomName: string; onGameStart:
                             <button
                                 className="room-start-button"
                                 onClick={startGame}
-                                disabled={!isConnected}
+                                disabled={!isConnected || !allPlayersReady}
                             >
                                 DÉMARRER
                             </button>
