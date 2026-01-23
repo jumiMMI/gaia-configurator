@@ -72,12 +72,12 @@
 .game-web-biometric-panel {
   position: absolute;
   top: 140px;
-  left: 40px;
-  width: 280px;
+  left: 30px;
+  width: 230px;
   background: rgba(10, 15, 30, 0.85);
   border: 2px solid rgba(100, 149, 237, 0.8);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 12px;
+  padding: 16px;
   backdrop-filter: blur(10px);
   box-shadow:
     0 0 30px rgba(100, 149, 237, 0.4),
@@ -87,12 +87,12 @@
 
 .game-web-panel-title {
   font-family: 'Courier New', monospace;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 300;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
   color: rgba(255, 255, 255, 0.9);
-  margin: 0 0 25px 0;
-  line-height: 1.4;
+  margin: 0 0 18px 0;
+  line-height: 1.3;
   text-align: left;
 }
 
@@ -100,62 +100,71 @@
 .game-web-biometric-stats {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
 .game-web-stat-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .game-web-stat-icon {
-  font-size: 20px;
-  width: 24px;
+  font-size: 16px;
+  width: 20px;
   text-align: center;
   filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.3));
 }
 
 .game-web-stat-bar {
   flex: 1;
-  height: 12px;
-  background: rgba(30, 35, 50, 0.8);
-  border-radius: 6px;
-  overflow: hidden;
+  height: 10px;
+  background: linear-gradient(90deg,
+      rgba(239, 68, 68, 0.9) 0%,
+      rgba(239, 68, 68, 0.7) 20%,
+      rgba(59, 130, 246, 0.9) 50%,
+      rgba(239, 68, 68, 0.7) 80%,
+      rgba(239, 68, 68, 0.9) 100%);
+  border-radius: 5px;
   position: relative;
   border: 1px solid rgba(100, 149, 237, 0.3);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
 }
 
 .game-web-stat-fill {
-  height: 100%;
-  background: linear-gradient(90deg,
-      rgba(239, 68, 68, 0.9) 0%,
-      rgba(239, 68, 68, 0.7) 30%,
-      rgba(59, 130, 246, 0.7) 70%,
-      rgba(59, 130, 246, 0.9) 100%);
-  transition: width 0.5s ease;
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 2px;
+  box-shadow:
+    0 0 8px rgba(255, 255, 255, 0.8),
+    0 0 4px rgba(255, 255, 255, 0.6);
+  transition: left 0.5s ease;
+  left: calc(var(--cursor-position, 50%) - 1.5px);
 }
 
 .game-web-stat-label {
   font-family: 'Courier New', monospace;
-  font-size: 13px;
-  letter-spacing: 1px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
   color: rgba(255, 255, 255, 0.8);
-  min-width: 45px;
+  min-width: 40px;
   text-align: right;
 }
 
 /* Panneau Temps à droite */
 .game-web-time-panel {
   position: absolute;
-  top: 400px;
-  right: 40px;
-  width: 280px;
+  top: 380px;
+  right: 30px;
+  width: 240px;
   background: rgba(10, 15, 30, 0.85);
   border: 2px solid rgba(100, 149, 237, 0.8);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 12px;
+  padding: 18px;
   backdrop-filter: blur(10px);
   box-shadow:
     0 0 30px rgba(100, 149, 237, 0.4),
@@ -166,22 +175,22 @@
 
 .game-web-timer-large {
   font-family: 'Courier New', monospace;
-  font-size: 64px;
+  font-size: 56px;
   font-weight: 300;
   letter-spacing: 4px;
   color: #fff;
-  margin: 20px 0;
+  margin: 15px 0;
   text-shadow: 0 0 20px rgba(100, 149, 237, 0.8);
 }
 
 .game-web-progress-bar {
   width: 100%;
-  height: 14px;
+  height: 12px;
   background: rgba(30, 35, 50, 0.8);
-  border-radius: 7px;
+  border-radius: 6px;
   overflow: hidden;
   border: 1px solid rgba(100, 149, 237, 0.3);
-  margin-top: 15px;
+  margin-top: 12px;
 }
 
 .game-web-progress-fill {
@@ -198,19 +207,19 @@
 /* Bouton d'action en bas à droite */
 .game-web-action-button-container {
   position: absolute;
-  bottom: 100px;
-  right: 40px;
+  bottom: 90px;
+  right: 30px;
   z-index: 10;
 }
 
 .game-web-action-button {
   font-family: 'Courier New', monospace;
-  font-size: 14px;
-  letter-spacing: 2px;
-  padding: 15px 30px;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  padding: 12px 24px;
   background: rgba(10, 15, 30, 0.85);
   border: 2px solid rgba(100, 149, 237, 0.8);
-  border-radius: 10px;
+  border-radius: 8px;
   color: rgba(255, 255, 255, 0.9);
   cursor: pointer;
   transition: all 0.3s ease;
@@ -232,20 +241,6 @@
 .game-web-action-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.game-web-action-button.finished {
-  border-color: rgba(34, 197, 94, 0.8);
-  box-shadow:
-    0 0 20px rgba(34, 197, 94, 0.4),
-    inset 0 0 15px rgba(34, 197, 94, 0.1);
-}
-
-.game-web-action-button.finished:hover {
-  border-color: rgba(34, 197, 94, 1);
-  box-shadow:
-    0 0 30px rgba(34, 197, 94, 0.6),
-    inset 0 0 20px rgba(34, 197, 94, 0.2);
 }
 
 /* Timeline en bas */
@@ -341,16 +336,16 @@
 }
 
 .game-web-end-popup {
-  background: linear-gradient(135deg, rgba(100, 149, 237, 0.3) 0%, rgba(70, 100, 200, 0.3) 100%);
-  border: 3px solid rgba(100, 149, 237, 0.9);
-  border-radius: 24px;
-  padding: 50px 60px;
-  max-width: 700px;
+  background: rgba(80, 120, 200, 1);
+  border: 3px solid rgba(100, 149, 237, 0.95);
+  border-radius: 20px;
+  padding: 45px 55px;
+  max-width: 650px;
   width: 90%;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(15px);
   box-shadow:
-    0 0 60px rgba(100, 149, 237, 0.6),
-    inset 0 0 40px rgba(100, 149, 237, 0.15);
+    0 0 50px rgba(100, 149, 237, 0.7),
+    inset 0 0 30px rgba(100, 149, 237, 0.2);
   animation: popupSlide 0.5s ease;
 }
 
@@ -368,94 +363,97 @@
 
 .game-web-end-title {
   font-family: 'Courier New', monospace;
-  font-size: 42px;
-  font-weight: 300;
-  letter-spacing: 8px;
+  font-size: 38px;
+  font-weight: 400;
+  letter-spacing: 6px;
   color: #fff;
   text-align: center;
-  margin: 0 0 15px 0;
-  text-shadow: 0 0 25px rgba(100, 149, 237, 1);
+  margin: 0 0 12px 0;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
 }
 
 .game-web-end-score {
   font-family: 'Courier New', monospace;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 300;
-  letter-spacing: 4px;
-  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 3px;
+  color: rgba(255, 255, 255, 0.95);
   text-align: center;
-  margin: 0 0 30px 0;
+  margin: 0 0 25px 0;
 }
 
 .game-web-end-description {
   font-family: 'Courier New', monospace;
-  font-size: 14px;
-  line-height: 1.8;
-  letter-spacing: 1px;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  line-height: 1.7;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.85);
   text-align: center;
-  margin: 0 0 40px 0;
-  padding: 0 20px;
+  margin: 0 0 30px 0;
+  padding: 0 15px;
 }
 
 .game-web-end-stats {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  padding: 30px;
-  background: rgba(10, 15, 30, 0.5);
-  border: 1px solid rgba(100, 149, 237, 0.4);
-  border-radius: 16px;
-  margin-bottom: 35px;
+  gap: 18px 25px;
+  padding: 25px 35px;
+  background: rgba(30, 50, 100, 0.4);
+  border: 2px solid rgba(100, 149, 237, 0.5);
+  border-radius: 12px;
+  margin-bottom: 30px;
 }
 
 .game-web-end-stat {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .game-web-end-stat-full {
   grid-column: 1 / -1;
   justify-content: center;
+  margin-top: 8px;
 }
 
 .game-web-end-stat-icon {
-  font-size: 28px;
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
+  font-size: 24px;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+  min-width: 30px;
+  text-align: center;
 }
 
 .game-web-end-stat-text {
   font-family: 'Courier New', monospace;
-  font-size: 16px;
-  letter-spacing: 2px;
-  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .game-web-end-button {
   font-family: 'Courier New', monospace;
-  font-size: 16px;
-  letter-spacing: 3px;
-  padding: 18px 45px;
-  background: rgba(10, 15, 30, 0.9);
-  border: 2px solid rgba(100, 149, 237, 0.8);
+  font-size: 14px;
+  letter-spacing: 2px;
+  padding: 15px 40px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid rgba(80, 120, 160, 0.8);
   border-radius: 50px;
   color: rgba(255, 255, 255, 0.95);
   cursor: pointer;
   transition: all 0.3s ease;
   display: block;
   margin: 0 auto;
-  backdrop-filter: blur(10px);
   box-shadow:
-    0 0 25px rgba(100, 149, 237, 0.5),
-    inset 0 0 15px rgba(100, 149, 237, 0.1);
+    0 4px 15px rgba(0, 0, 0, 0.5),
+    inset 0 0 10px rgba(100, 149, 237, 0.1);
 }
 
 .game-web-end-button:hover {
-  background: rgba(20, 25, 40, 1);
+  background: rgba(0, 0, 0, 0.95);
   border-color: rgba(100, 149, 237, 1);
   box-shadow:
-    0 0 35px rgba(100, 149, 237, 0.7),
-    inset 0 0 25px rgba(100, 149, 237, 0.2);
-  transform: translateY(-3px);
+    0 4px 20px rgba(0, 0, 0, 0.7),
+    0 0 25px rgba(100, 149, 237, 0.4),
+    inset 0 0 15px rgba(100, 149, 237, 0.15);
+  transform: translateY(-2px);
 }

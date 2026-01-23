@@ -1,38 +1,202 @@
+/* Container principal */
 .home-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+}
+
+/* Canvas Three.js en arrière-plan */
+.home-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* Contenu par-dessus le canvas */
+.home-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 40px;
+}
+
+/* Panneau principal avec bordures futuristes */
+.home-panel {
+  position: relative;
+  background: rgba(100, 149, 237, 0.5);
+  border: 3px solid rgba(100, 149, 237, 0.9);
+  border-radius: 20px;
+  padding: 80px 100px;
+  max-width: 900px;
+  width: 90%;
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 0 60px rgba(100, 149, 237, 0.5),
+    inset 0 0 40px rgba(100, 149, 237, 0.1);
+  clip-path: polygon(0 40px, 40px 0,
+      calc(100% - 40px) 0, 100% 40px,
+      100% calc(100% - 40px), calc(100% - 40px) 100%,
+      40px 100%, 0 calc(100% - 40px));
+}
+
+/* Coins décoratifs */
+.home-corner {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+.home-corner-top-left {
+  top: 15px;
+  left: 15px;
+}
+
+.home-corner-top-right {
+  top: 15px;
+  right: 15px;
+}
+
+.home-corner-top-right::before,
+.home-corner-top-right::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+.home-corner-top-right::before {
+  top: 15px;
+  right: 0;
+}
+
+.home-corner-top-right::after {
+  top: 30px;
+  right: 0;
+}
+
+.home-corner-bottom-left {
+  bottom: 15px;
+  left: 15px;
+}
+
+.home-corner-bottom-left::before,
+.home-corner-bottom-left::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+.home-corner-bottom-left::before {
+  bottom: 15px;
+  left: 0;
+}
+
+.home-corner-bottom-left::after {
+  bottom: 30px;
+  left: 0;
+}
+
+.home-corner-bottom-right {
+  bottom: 15px;
+  right: 15px;
+}
+
+/* Titre */
+.home-title {
+  font-family: 'Courier New', monospace;
+  font-size: 72px;
+  font-weight: 700;
+  letter-spacing: 8px;
+  color: #000;
+  text-align: center;
+  margin: 0 0 80px 0;
+  text-shadow:
+    2px 2px 0 rgba(100, 149, 237, 0.3),
+    4px 4px 0 rgba(100, 149, 237, 0.2);
+}
+
+/* Container des boutons */
+.home-buttons {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: 25px;
   align-items: center;
-  height: 100vh;
-  padding: 20px;
 }
 
-.room-input {
-  width: 100%;
-  max-width: 400px;
-  padding: 12px;
-  margin-bottom: 20px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+/* Boutons */
+.home-button {
+  font-family: 'Courier New', monospace;
   font-size: 16px;
-}
-
-.room-button {
-  padding: 12px 24px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  padding: 18px 60px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid rgba(60, 80, 120, 0.8);
+  border-radius: 50px;
+  color: rgba(255, 255, 255, 0.95);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
+  min-width: 320px;
+  text-align: center;
+  box-shadow:
+    0 4px 15px rgba(0, 0, 0, 0.5),
+    inset 0 0 10px rgba(100, 149, 237, 0.1);
 }
 
-.room-button:hover {
-  background-color: #0056b3;
+.home-button:hover {
+  background: rgba(0, 0, 0, 0.95);
+  border-color: rgba(100, 149, 237, 1);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.7),
+    0 0 25px rgba(100, 149, 237, 0.4),
+    inset 0 0 15px rgba(100, 149, 237, 0.15);
+  transform: translateY(-2px);
 }
 
-.room-button:active {
-  background-color: #004085;
+.home-button:active {
+  transform: translateY(0);
 }
 
+/* Responsive */
+@media (max-width: 768px) {
+  .home-panel {
+    padding: 60px 40px;
+  }
+
+  .home-title {
+    font-size: 48px;
+    margin-bottom: 50px;
+  }
+
+  .home-button {
+    font-size: 14px;
+    padding: 15px 50px;
+    min-width: 280px;
+  }
+}
+
+/* Ancien styles à supprimer */
+.home-buttons-container,
+.room-input,
+.room-button {
+  display: none;
+}

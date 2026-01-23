@@ -8,7 +8,7 @@ export default class Space extends Object3D {
     private readonly _stars: Stars;
     private readonly _moon: Moon;
 
-    constructor() {
+    constructor(isMoonVisible: boolean = true) {
         super();
         this._sky = new Sky();
         this._stars = new Stars();
@@ -16,7 +16,9 @@ export default class Space extends Object3D {
 
         this.add(this._sky);
         this.add(this._stars);
-        this.add(this._moon);
+        if (isMoonVisible) {
+            this.add(this._moon);
+        }
     }
 
     public update(dt: number) {

@@ -1,183 +1,303 @@
+/* Container principal */
 .room-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background-color: #D9D9D9;
-    padding: 20px;
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #000;
 }
 
+/* Canvas Three.js en arrière-plan */
+.room-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+/* Wrapper du contenu */
+.room-content-wrapper {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 40px;
+}
+
+/* Panneau principal avec bordures futuristes */
+.room-panel {
+    position: relative;
+    background: rgba(100, 140, 200, 0.7);
+    border: 3px solid rgba(100, 149, 237, 0.95);
+    border-radius: 0;
+    padding: 35px;
+    max-width: 1100px;
+    width: 95%;
+    backdrop-filter: blur(8px);
+    box-shadow: 
+        0 0 50px rgba(100, 149, 237, 0.6),
+        inset 0 0 30px rgba(100, 149, 237, 0.15);
+    clip-path: polygon(
+        0 30px, 30px 0,
+        120px 0, 150px 30px,
+        calc(50% - 100px) 30px, calc(50% - 70px) 0,
+        calc(50% + 70px) 0, calc(50% + 100px) 30px,
+        calc(100% - 150px) 30px, calc(100% - 120px) 0,
+        calc(100% - 30px) 0, 100% 30px,
+        100% calc(100% - 30px), calc(100% - 30px) 100%,
+        30px 100%, 0 calc(100% - 30px)
+    );
+}
+
+/* Coins décoratifs */
+.room-corner {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+    z-index: 2;
+}
+
+.room-corner-top-left {
+    top: 20px;
+    left: 20px;
+}
+
+.room-corner-top-left::before,
+.room-corner-top-left::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+.room-corner-top-left::before {
+    bottom: 18px;
+    left: 0;
+}
+
+.room-corner-top-left::after {
+    bottom: 36px;
+    left: 0;
+}
+
+.room-corner-top-right {
+    top: 20px;
+    right: 20px;
+}
+
+.room-corner-bottom-left {
+    bottom: 20px;
+    left: 20px;
+}
+
+.room-corner-bottom-right {
+    bottom: 20px;
+    right: 20px;
+}
+
+.room-corner-bottom-right::before,
+.room-corner-bottom-right::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+.room-corner-bottom-right::before {
+    top: 0;
+    right: 18px;
+}
+
+.room-corner-bottom-right::after {
+    top: 0;
+    right: 36px;
+}
+
+/* Panneau interne avec fond spatial */
+.room-inner-panel {
+    position: relative;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid rgba(100, 149, 237, 0.6);
+    border-radius: 12px;
+    padding: 40px;
+    backdrop-filter: blur(5px);
+}
+
+/* Contenu principal */
 .room-content {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 40px;
-    max-width: 1000px;
-    width: 100%;
-}
-
-.room-content-top {
-    display: flex;
     flex-direction: row;
-    /* align-items: center; */
-    justify-content: center;
-    gap: 40px;
-    width: 100%;
-}
-
-.qr-code-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    gap: 60px;
     align-items: center;
-    padding: 20px;
-    background-color: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    gap: 20px;
+    margin-bottom: 30px;
 }
 
-.room-code-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
+/* Section QR Code */
+.room-qr-section {
+    flex-shrink: 0;
 }
 
-.room-code-label {
-    font-size: 14px;
-    color: #666;
-    font-weight: 500;
-}
-
-.room-code-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background-color: #f5f5f5;
-    padding: 8px 16px;
+.room-qr-wrapper {
+    background: rgba(100, 149, 237, 0.3);
+    border: 3px solid rgba(100, 149, 237, 0.9);
     border-radius: 8px;
-    border: 1px solid #ddd;
+    padding: 20px;
+    backdrop-filter: blur(5px);
+    box-shadow: 
+        0 0 30px rgba(100, 149, 237, 0.4),
+        inset 0 0 20px rgba(100, 149, 237, 0.1);
 }
 
-.room-code-text {
-    font-size: 18px;
-    font-weight: 600;
-    font-family: monospace;
-    color: #333;
-    letter-spacing: 0.1em;
-}
-
-.copy-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 18px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
+/* Section informations */
+.room-info-section {
+    flex: 1;
     display: flex;
     align-items: center;
-    justify-content: center;
 }
 
-.copy-button:hover {
-    background-color: #e0e0e0;
-}
-
-.copy-button:active {
-    background-color: #d0d0d0;
-}
-
-.right-section {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    /* max-width: 1200px; */
-}
-
-.wrapper-right {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    height: auto;
-    background-color: #5f80a8;
-    padding: 28px;
-    border-radius: 60px;
-}
-
-.team-name-container {
-    display: flex;
-    flex-direction: row;
-    align-items: baseline;
+.room-info-wrapper {
     width: 100%;
-    gap: 12px;
+    background: rgba(100, 140, 200, 0.5);
+    border: 2px solid rgba(100, 149, 237, 0.7);
+    border-radius: 50px;
+    padding: 25px 40px;
+    backdrop-filter: blur(5px);
 }
 
-.team-name-label {
-    font-size: 32px;
-    font-weight: 500;
-    color: #333;
+/* Input nom d'équipe */
+.room-team-input-container {
+    display: flex;
+    align-items: baseline;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.room-team-label {
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    color: #000;
     white-space: nowrap;
 }
 
-.team-name-input {
+.room-team-input {
     flex: 1;
-    padding: 0;
-    padding-bottom: 0px;
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: #000;
+    background: transparent;
     border: none;
-    border-radius: 0;
-    font-size: 32px;
-    font-family: "omnium", sans-serif;
-    background-color: transparent;
-    background-image: repeating-linear-gradient(to right,
-            #333 0px,
-            #333 2px,
-            transparent 2px,
-            transparent 8px);
-    background-size: 8px 2px;
-    background-position: 0 bottom;
-    background-repeat: repeat-x;
-    letter-spacing: 0.2em;
-    min-width: 200px;
-    line-height: 1.5;
-}
-
-.team-name-input:focus {
+    border-bottom: 2px dotted rgba(0, 0, 0, 0.4);
+    padding: 5px 0;
     outline: none;
-    border-color: #555;
 }
 
-.participants-container {
+.room-team-input::placeholder {
+    color: rgba(0, 0, 0, 0.3);
+}
+
+/* Info participants */
+.room-participants-info {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: #000;
+}
+
+.room-participants-icon {
+    font-size: 12px;
+    color: #000;
+}
+
+.room-participants-text {
+    letter-spacing: 0.5px;
+}
+
+/* Bouton Démarrer */
+.room-start-button {
+    font-family: 'Courier New', monospace;
     font-size: 16px;
-}
-
-.participants-label {
-    color: #333;
-    font-weight: 500;
-}
-
-.participants-count {
-    color: #333;
-    font-weight: bold;
-}
-
-.start-button {
-    padding: 14px 32px;
-    background-color: #333;
-    color: white;
-    border: none;
-    border-radius: 15px;
-    font-size: 20px;
-    font-weight: 600;
-    font-family: "omnium", sans-serif;
-    text-transform: uppercase;
+    font-weight: 400;
+    letter-spacing: 2px;
+    padding: 16px 50px;
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid rgba(60, 80, 120, 0.8);
+    border-radius: 50px;
+    color: rgba(255, 255, 255, 0.95);
     cursor: pointer;
-    transition: background-color 0.2s;
-    margin-top: 24px;
-    min-width: 200px;
+    transition: all 0.3s ease;
+    display: block;
+    margin: 0 auto;
+    box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.6),
+        inset 0 0 10px rgba(100, 149, 237, 0.1);
+}
+
+.room-start-button:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 1);
+    border-color: rgba(100, 149, 237, 1);
+    box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.8),
+        0 0 25px rgba(100, 149, 237, 0.4),
+        inset 0 0 15px rgba(100, 149, 237, 0.15);
+    transform: translateY(-2px);
+}
+
+.room-start-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .room-content {
+        flex-direction: column;
+        gap: 40px;
+    }
+
+    .room-panel {
+        padding: 25px;
+    }
+
+    .room-inner-panel {
+        padding: 30px 20px;
+    }
+}
+
+/* Anciens styles à cacher */
+.qr-code-container,
+.room-code-container,
+.room-code-label,
+.room-code-wrapper,
+.room-code-text,
+.copy-button,
+.right-section,
+.wrapper-right,
+.team-name-container,
+.team-name-label,
+.team-name-input,
+.participants-container,
+.participants-label,
+.participants-count,
+.start-button,
+.room-content-top {
+    display: none;
 }
