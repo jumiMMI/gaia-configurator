@@ -9,14 +9,9 @@ function generateClientId(): string {
   return `${timestamp}-${randomPart}`;
 }
 
-/**
- * Récupère ou génère un ID client persistant
- * Utilise AsyncStorage sur mobile et localStorage sur web
- */
 export async function getOrCreateClientId(): Promise<string> {
   try {
     if (Platform.OS === "web") {
-      // Sur web, utiliser localStorage
       if (typeof window !== "undefined") {
         let clientId = localStorage.getItem(CLIENT_ID_KEY);
         if (!clientId) {
@@ -26,7 +21,6 @@ export async function getOrCreateClientId(): Promise<string> {
         return clientId;
       }
     } else {
-      // Sur mobile, utiliser AsyncStorage
       let clientId = await AsyncStorage.getItem(CLIENT_ID_KEY);
       if (!clientId) {
         clientId = generateClientId();
@@ -35,12 +29,10 @@ export async function getOrCreateClientId(): Promise<string> {
       return clientId;
     }
   } catch (error) {
-    // En cas d'erreur, générer un ID temporaire
     console.warn("Erreur lors de la récupération de l'ID client:", error);
     return generateClientId();
   }
   
-  // Fallback
   return generateClientId();
 }
 

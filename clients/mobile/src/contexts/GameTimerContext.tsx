@@ -18,7 +18,6 @@ export function GameTimerProvider({ children }: { children: ReactNode }) {
   const [gameStartTimestamp, setGameStartTimestamp] = useState<number | null>(null);
   const [gameDuration, setGameDuration] = useState(300);
 
-  // Formatage du temps (MM:SS)
   const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -32,7 +31,6 @@ export function GameTimerProvider({ children }: { children: ReactNode }) {
     return Math.max(0, remaining);
   };
 
-  // Gérer le countdown du timer
   useEffect(() => {
     if (isTimerActive && gameStartTimestamp) {
       const initialRemaining = calculateTimeRemaining(gameStartTimestamp, gameDuration);
@@ -47,7 +45,7 @@ export function GameTimerProvider({ children }: { children: ReactNode }) {
         } else {
           setTimeRemaining(remaining);
         }
-      }, 100); // Vérifier toutes les 100ms pour plus de précision
+      }, 100);
 
       return () => clearInterval(interval);
     }

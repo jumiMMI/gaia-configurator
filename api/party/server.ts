@@ -1,33 +1,34 @@
 import { PLANET_CONFIG } from "@gaia/shared/config/planetConfig";
 import { biomeMap } from "@gaia/shared/domain/Biome";
 import PlanetState from "@gaia/shared/domain/PlanetState";
-import type { AllTileAssignmentsMessage, BiomeData, PlayerZone, RotatePlanetMessage, SetBiomeMessage, StartGameMessage, SyncStateMessage, TileAssignmentMessage } from "@gaia/shared/party/messages";
+import type { AllTileAssignmentsMessage, BiomeData, PlayerZone, PlayersReadyMessage, RotatePlanetMessage, SetBiomeMessage, StartGameMessage, SyncStateMessage, TileAssignmentMessage } from "@gaia/shared/party/messages";
 import { Connection } from "partykit/server";
 
 interface User {
-  id: string; // ID persistant du client (clientId)
-  connectionId: string; // ID de la connexion WebSocket (temporaire)
+  id: string;
+  connectionId: string;
   // name: string;
   isHost: boolean;
-  clientType?: 'web' | 'mobile'; // Type de client (web ou mobile)
+  clientType?: 'web' | 'mobile';
 }
 
 export default class PartyServer {
 
   private clients: Connection<unknown>[] = [];
   private history: string[] = [];
-  private hostId?: string; // ID persistant du host
+  private hostId?: string;
   private users: User[] = [];
   private tileBiomes: Record<number, BiomeData> = {};
   private planetState!: PlanetState;
   private readonly TOTAL_TILES = PLANET_CONFIG.TOTAL_TILES;
-  private userTileAssignments: Map<string, number[]> = new Map(); // Clé = clientId (persistant)
+  private userTileAssignments: Map<string, number[]> = new Map();
   private isGameStarted: boolean = false;
-  private gameStartTimestamp: number | null = null; // Timestamp de début du jeu
+  private gameStartTimestamp: number | null = null;
   private gameDuration: number = 300;
-  private clientTypes: Map<string, 'web' | 'mobile'> = new Map(); // Clé = connectionId
-  private clientIdMap: Map<string, string> = new Map(); // Map connectionId -> clientId
-  private connectionIdMap: Map<string, string> = new Map(); // Map clientId -> connectionId (pour trouver la connexion active)
+  private readyPlayers: Set<string> = new Set();
+  private clientTypes: Map<string, 'web' | 'mobile'> = new Map();
+  private clientIdMap: Map<string, string> = new Map();
+  private connectionIdMap: Map<string, string> = new Map();
 
   onConnect(connection: Connection<unknown>, roomName: string) {
     this.clients.push(connection);
@@ -46,8 +47,6 @@ export default class PartyServer {
       }
     }
 
-    // L'ID client persistant sera reçu via CLIENT_INFO
-    // Pour l'instant, on attend ce message avant de créer/utiliser l'utilisateur
   }
 
   onMessage(message: string, sender: Connection<unknown>, roomName: string) {
@@ -57,51 +56,43 @@ export default class PartyServer {
       if (parsed.type === 'CLIENT_INFO') {
         const clientInfo = parsed as { clientType: 'web' | 'mobile'; clientId: string };
         const clientType = clientInfo.clientType;
-        const clientId = clientInfo.clientId; // ID persistant
+        const clientId = clientInfo.clientId;
 
-        // Associer connection.id (temporaire) à clientId (persistant)
         this.clientIdMap.set(sender.id, clientId);
         this.connectionIdMap.set(clientId, sender.id);
         this.clientTypes.set(sender.id, clientType);
 
-        // Chercher un utilisateur existant avec le même clientId (reconnexion)
         let user = this.users.find(u => u.id === clientId);
 
         if (user) {
-          // Reconnexion : mettre à jour l'ID de connexion
           user.connectionId = sender.id;
           user.clientType = clientType;
         } else {
-          // Nouvel utilisateur : le créer
           user = {
-            id: clientId, // ID persistant
-            connectionId: sender.id, // ID de connexion actuelle
+            id: clientId,
+            connectionId: sender.id,
             isHost: false,
             clientType: clientType,
           };
           this.users.push(user);
         }
 
-        // Si c'est un client web, il devient toujours host (remplace l'ancien si nécessaire)
         if (clientType === 'web') {
           const existingWebHost = this.users.find(u => u.isHost && u.clientType === 'web' && u.id !== clientId);
           const wasHostChanged = !this.hostId || this.hostId !== clientId;
 
-          // Retirer le statut host de l'ancien host (s'il existe et est différent du nouveau)
           if (existingWebHost) {
             existingWebHost.isHost = false;
           }
 
-          // Retirer aussi le statut host si c'est un client mobile
           const oldHost = this.users.find(u => u.isHost && u.id !== clientId);
           if (oldHost && oldHost.clientType !== 'web') {
             oldHost.isHost = false;
           }
 
-          this.hostId = clientId; // Utiliser l'ID persistant
+          this.hostId = clientId;
           user.isHost = true;
 
-          // Notifier tous les clients du changement de host SEULEMENT si le host a changé
           if (wasHostChanged) {
             this.clients.forEach(c => {
               const cClientId = this.clientIdMap.get(c.id);
@@ -114,7 +105,6 @@ export default class PartyServer {
             });
           }
 
-          // Notifier tous les clients de la liste mise à jour
           this.clients.forEach(c =>
             c.send(JSON.stringify({
               type: "users",
@@ -123,14 +113,12 @@ export default class PartyServer {
           );
         }
 
-        // Envoyer le rôle au client qui vient de se connecter
         sender.send(JSON.stringify({
           type: "role",
           isHost: user.isHost,
           hostId: this.hostId,
         }));
 
-        // Notifier tous les clients de la liste mise à jour (seulement si ce n'est pas un client web, car déjà fait ci-dessus)
         if (clientType !== 'web') {
           this.clients.forEach(c =>
             c.send(JSON.stringify({
@@ -140,10 +128,8 @@ export default class PartyServer {
           );
         }
 
-        // Envoyer l'historique
         this.history.forEach((msg) => sender.send(msg));
 
-        // Envoyer l'état actuel de la planète au nouveau client
         const syncMessage: SyncStateMessage = {
           type: 'SYNC_STATE',
           tileBiomes: this.tileBiomes,
@@ -151,7 +137,6 @@ export default class PartyServer {
         };
         sender.send(JSON.stringify(syncMessage));
 
-        // Si le jeu est déjà démarré, envoyer START_GAME et les assignments au nouveau client
         if (this.isGameStarted && this.gameStartTimestamp) {
           sender.send(JSON.stringify({ 
             type: 'START_GAME',
@@ -163,9 +148,15 @@ export default class PartyServer {
           if (clientType === 'web' && user.isHost) {
             // Pour le host web, envoyer toutes les zones de tous les joueurs
             this.sendAllTileAssignmentsToHost(sender);
+            this.notifyHostPlayersReady(); // Notifier l'état des joueurs prêts
           } else if (clientType === 'mobile') {
             // Pour les clients mobiles, envoyer leur propre assignment
             this.sendTileAssignmentToPlayer(sender, clientId);
+          }
+        } else {
+          // Si le jeu n'est pas démarré, notifier le host de l'état des joueurs prêts
+          if (clientType === 'web' && user.isHost) {
+            this.notifyHostPlayersReady();
           }
         }
 
@@ -227,11 +218,25 @@ export default class PartyServer {
         this.planetState = new PlanetState(this.TOTAL_TILES);
         this.userTileAssignments.clear();
         this.isGameStarted = false;
+        this.readyPlayers.clear(); // Réinitialiser les joueurs prêts
         const stats = this.planetState.getFullStats();
 
         this.clients.forEach((c) => {
           c.send(JSON.stringify({ type: 'RESET_PLANET', stats }));
         });
+        return;
+      }
+
+      // Gérer le message READY (envoyé par les joueurs mobiles)
+      if (parsed.type === 'READY') {
+        const clientId = this.clientIdMap.get(sender.id);
+        if (!clientId || clientId === this.hostId) {
+          return; // Client non identifié ou host (le host n'a pas besoin d'être prêt)
+        }
+
+        // Ajouter le joueur à la liste des prêts
+        this.readyPlayers.add(clientId);
+        this.notifyHostPlayersReady();
         return;
       }
 
@@ -261,10 +266,16 @@ export default class PartyServer {
           return;
         }
 
+        const allPlayersReady = players.every(player => this.readyPlayers.has(player.id));
+        if (!allPlayersReady) {
+          return;
+        }
+
         this.divideTilesAmongUsers();
         this.sendTileAssignments();
         this.isGameStarted = true;
         this.gameStartTimestamp = Date.now();
+        this.readyPlayers.clear();
 
         this.clients.forEach((c) => {
           c.send(JSON.stringify({ 
@@ -287,20 +298,21 @@ export default class PartyServer {
     this.clients = this.clients.filter((c) => c !== connection);
     this.clientTypes.delete(connection.id);
     this.clientIdMap.delete(connection.id);
+    
+    if (clientId && clientId !== this.hostId) {
+      this.readyPlayers.delete(clientId);
+      this.notifyHostPlayersReady();
+    }
 
     if (clientId) {
-      // Mettre à jour l'utilisateur : retirer seulement l'ID de connexion, garder l'utilisateur
+
       const user = this.users.find(u => u.id === clientId);
       if (user) {
-        // Si c'est la connexion active, la retirer
         if (user.connectionId === connection.id) {
-          // Vérifier s'il y a une autre connexion pour ce clientId (reconnexion en cours)
           const activeConnectionId = this.connectionIdMap.get(clientId);
           if (activeConnectionId && activeConnectionId !== connection.id) {
-            // Il y a déjà une nouvelle connexion, mettre à jour
             user.connectionId = activeConnectionId;
           } else {
-            // Pas de nouvelle connexion, retirer l'utilisateur
             this.users = this.users.filter((u) => u.id !== clientId);
             this.userTileAssignments.delete(clientId);
             this.connectionIdMap.delete(clientId);
@@ -321,10 +333,10 @@ export default class PartyServer {
       this.clientTypes.clear();
       this.clientIdMap.clear();
       this.connectionIdMap.clear();
+      this.readyPlayers.clear();
       return;
     }
 
-    // Si le host s'est déconnecté, désigner un nouveau host (priorité au web)
     if (clientId && clientId === this.hostId) {
       const webClients = this.users.filter(u => u.clientType === 'web' && u.connectionId);
 
@@ -524,6 +536,33 @@ export default class PartyServer {
     };
 
     connection.send(JSON.stringify(message));
+  }
+
+  /**
+   * Notifie le host web de l'état des joueurs prêts
+   */
+  private notifyHostPlayersReady(): void {
+    if (!this.hostId) return;
+
+    const hostConnectionId = this.connectionIdMap.get(this.hostId);
+    if (!hostConnectionId) return;
+
+    const hostConnection = this.clients.find(c => c.id === hostConnectionId);
+    if (!hostConnection) return;
+
+    const players = this.users.filter(user => user.id !== this.hostId && user.connectionId);
+    const totalPlayers = players.length;
+    const readyPlayerIds = Array.from(this.readyPlayers);
+    const allReady = totalPlayers > 0 && players.every(player => this.readyPlayers.has(player.id));
+
+    const message: PlayersReadyMessage = {
+      type: 'PLAYERS_READY',
+      readyPlayers: readyPlayerIds,
+      totalPlayers,
+      allReady,
+    };
+
+    hostConnection.send(JSON.stringify(message));
   }
 
   /**

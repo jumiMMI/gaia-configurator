@@ -91,39 +91,12 @@ export async function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record
         const center = child.userData.centerPoint;
 
         if (biomeData) {
-            // if (biomeData.nom === 'Prairie') {
-
-            //     child.visible = true;
-            //     child.material.color = new THREE.Color(biomeData.couleur);
-            //     child.position.y = 0;
-            //     child.material.depthWrite = true;
-
-            //     if (!placedModels.has(tileIndex)) {
-            //         const rawBoundary = child.userData.boundary;
-            //         const boundaryPoints = rawBoundary.map((p: { x: number; y: number; z: number }) => new THREE.Vector3(p.x, p.y, p.z));
-
-            //         const model = await getModelForBiome(biomeData.nom, {
-            //             boundary: boundaryPoints,
-            //             center: center,
-            //             isFlat: false,
-            //             hexRadius: child.userData.hexRadius,
-            //         });
-
-            //         if (model) {
-            //             // Le terrain procédural est déjà positionné correctement dans createPrairieTerrain
-            //             planet.add(model);
-            //             placedModels.set(tileIndex, model);
-            //         }
-            //     }
-            // } else 
             if (biomeData.nom === 'Océan') {
-                // Pour l'océan, utiliser la couleur bleue
                 child.visible = true;
                 child.material.color = new THREE.Color(biomeData.couleur);
                 child.position.y = 0;
                 child.material.depthWrite = true;
 
-                // Supprimer le modèle existant s'il y en a un
                 const existing = placedModels.get(tileIndex);
                 if (existing) {
                     planet.remove(existing);
@@ -140,46 +113,51 @@ export async function updatePlanetBiomes(planet: THREE.Group, tileBiomes: Record
                 child.position.y = 0;
                 child.material.depthWrite = true;
             } else {
-                // Pour tous les autres biomes (Forêt, Désert, Montagne, etc.)
                 child.visible = true;
                 child.material.color = new THREE.Color(biomeData.couleur);
                 child.position.y = 0;
                 child.material.depthWrite = true;
             }
 
-            // Placer le modèle 3D seulement pour les biomes qui en ont besoin (pas Prairie, pas Océan)
-            if (biomeData.nom !== 'Océan' && !placedModels.has(tileIndex)) {
-                const rawBoundary = child.userData.boundary;
-                const boundaryPoints = rawBoundary.map((p: { x: number; y: number; z: number }) => new THREE.Vector3(p.x, p.y, p.z));
+            if (biomeData.nom !== 'Océan') {
+                const existing = placedModels.get(tileIndex);
+                if (existing) {
+                    planet.remove(existing);
+                    placedModels.delete(tileIndex);
+                }
 
-                const model = await getModelForBiome(biomeData.nom);
+                if (!placedModels.has(tileIndex)) {
+                    const rawBoundary = child.userData.boundary;
+                    const boundaryPoints = rawBoundary.map((p: { x: number; y: number; z: number }) => new THREE.Vector3(p.x, p.y, p.z));
 
-                if (model) {
-                    model.position.copy(center);
-                    const normal = center.clone().normalize();
-                    model.quaternion.setFromUnitVectors(
-                        new THREE.Vector3(0, 1, 0),
-                        normal
-                    );
+                    const model = await getModelForBiome(biomeData.nom);
 
-                    let totalEdgeLength = 0;
-                    for (let i = 0; i < boundaryPoints.length; i++) {
-                        const current = boundaryPoints[i];
-                        const next = boundaryPoints[(i + 1) % boundaryPoints.length];
-                        totalEdgeLength += current.distanceTo(next);
+                    if (model) {
+                        model.position.copy(center);
+                        const normal = center.clone().normalize();
+                        model.quaternion.setFromUnitVectors(
+                            new THREE.Vector3(0, 1, 0),
+                            normal
+                        );
+
+                        let totalEdgeLength = 0;
+                        for (let i = 0; i < boundaryPoints.length; i++) {
+                            const current = boundaryPoints[i];
+                            const next = boundaryPoints[(i + 1) % boundaryPoints.length];
+                            totalEdgeLength += current.distanceTo(next);
+                        }
+                        const avgEdgeLength = totalEdgeLength / boundaryPoints.length;
+
+                        const scale = avgEdgeLength * 0.90;
+                        model.scale.setScalar(scale);
+
+                        planet.add(model);
+                        placedModels.set(tileIndex, model);
                     }
-                    const avgEdgeLength = totalEdgeLength / boundaryPoints.length;
-
-                    const scale = avgEdgeLength * 0.90;
-                    model.scale.setScalar(scale);
-
-                    planet.add(model);
-                    placedModels.set(tileIndex, model);
                 }
             }
         }
         else {
-            // Si pas de biome, appliquer l'océan par défaut
             child.visible = true;
             child.material.color.setHex(OCEAN_TILE_COLOR);
             child.position.y = 0;
@@ -383,43 +361,17 @@ export async function updatePlanetFlatBiomes(planet: THREE.Group, tileBiomes: Re
         const center = child.userData.centerPoint;
 
         if (biomeData) {
-            // if (biomeData.nom === 'Prairie') {
-            //     child.visible = false;
-
-            //     // Créer le terrain procédural de la prairie
-            //     if (!placedModelsFlat.has(tileIndex)) {
-            //         const model = await getModelForBiome(biomeData.nom, {
-            //             boundary: [], // Pour la version plate, on crée un hexagone régulier
-            //             center: center,
-            //             isFlat: true,
-            //             hexRadius: HEX_RADIUS,
-            //         });
-
-            //         if (model) {
-            //             model.position.copy(center);
-            //             model.quaternion.identity();
-            //             planet.add(model);
-            //             placedModelsFlat.set(tileIndex, model);
-            //         }
-            //     }
-            // } else 
             if (biomeData.nom === 'Océan') {
-                // Pour l'océan, utiliser juste la couleur bleue claire
                 child.visible = true;
                 child.material.color.setHex(OCEAN_TILE_COLOR);
                 child.position.y = 0;
                 child.material.depthWrite = true;
 
-                // Supprimer le modèle existant s'il y en a un
                 const existing = placedModelsFlat.get(tileIndex);
                 if (existing) {
                     planet.remove(existing);
                     placedModelsFlat.delete(tileIndex);
                 }
-                // } 
-                // else if (biomeData.nom === 'Volcan' || biomeData.nom === 'Glacier') {
-                //     // Pour le volcan et le glacier, cacher la tuile de base (seul le modèle 3D sera visible)
-                //     child.visible = false;
             } else {
                 child.visible = true;
                 child.material.color = new THREE.Color(biomeData.couleur);
@@ -427,7 +379,6 @@ export async function updatePlanetFlatBiomes(planet: THREE.Group, tileBiomes: Re
                 child.material.depthWrite = true;
             }
 
-            // Placer le modèle 3D seulement pour les biomes qui en ont besoin (pas Prairie, pas Océan)
             if (biomeData.nom !== 'Océan' && !placedModelsFlat.has(tileIndex)) {
                 const model = await getModelForBiome(biomeData.nom);
 
@@ -450,10 +401,9 @@ export async function updatePlanetFlatBiomes(planet: THREE.Group, tileBiomes: Re
             child.position.y = 0;
             child.material.depthWrite = true; // Réinitialiser depthWrite
 
-            // Supprimer le modèle existant
-            const existing = placedModelsFlat.get(tileIndex);
-            if (existing) {
-                planet.remove(existing);
+            const modelExistant = placedModelsFlat.get(tileIndex);
+            if (modelExistant) {
+                planet.remove(modelExistant);
                 placedModelsFlat.delete(tileIndex);
             }
         }

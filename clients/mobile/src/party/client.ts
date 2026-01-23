@@ -7,6 +7,7 @@ import {
   isSyncStateMessage,
   isTileAssignmentMessage,
   PlanetStatsData,
+  ReadyMessage,
   ResetPlanetMessage,
   RoleMessage,
   RotatePlanetMessage,
@@ -41,6 +42,7 @@ interface UsePlanetSyncReturn {
   tileBiomes: Record<number, BiomeData>;
   sendBiomeUpdate: (tileIndex: number, biome: BiomeData) => void;
   sendPlanetRotation: (velocityX: number, velocityY: number) => void;
+  sendReady: () => void;
   resetPlanet: () => void;
   startGame: () => void;
   isConnected: boolean;
@@ -219,7 +221,9 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
         // Réception du signal de démarrage du jeu
         if (isStartGameMessage(data)) {
           const startGameMsg = data as StartGameMessage;
-          onGameStartRef.current?.(startGameMsg.startTimestamp, startGameMsg.gameDuration);
+          const timestamp = startGameMsg.startTimestamp ?? Date.now();
+          const duration = startGameMsg.gameDuration ?? 300;
+          onGameStartRef.current?.(timestamp, duration);
           return;
         }
       } catch {
@@ -273,6 +277,18 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
     socketRef.current.send(JSON.stringify(message));
   }, []);
 
+  const sendReady = useCallback(() => {
+    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    const message: ReadyMessage = {
+      type: 'READY',
+    };
+
+    socketRef.current.send(JSON.stringify(message));
+  }, []);
+
 
   const resetPlanet = useCallback(() => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
@@ -307,6 +323,7 @@ export function usePlanetSync({ room, onBiomeUpdate, canSendUpdate, onPlacementE
     tileBiomes,
     sendBiomeUpdate,
     sendPlanetRotation,
+    sendReady,
     resetPlanet,
     startGame,
     isConnected,

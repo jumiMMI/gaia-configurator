@@ -98,7 +98,7 @@ export default function Joystick({ size = 95, maxRadius, onMove }: JoystickProps
                 stiffness: 300,
             });
 
-            // Réinitialiser les valeurs quand le joystick est relâché
+
             angleValue.value = 0;
             distanceValue.value = 0;
         });

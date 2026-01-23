@@ -1,15 +1,18 @@
 import { Biome, getDefaultHexasphereData } from "@gaia/shared";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Image, ImageBackground, LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useGameTimer } from "../contexts/GameTimerContext";
 import { usePlanetSync } from "../party/client";
-import { getPlayerBorderImage, getPlayerColor } from "../utils/playerColors";
+import { getPlayerBorderImage, getPlayerColor, getPlayerEndgameImage } from "../utils/playerColors";
 import BiomeSelector from "./configurator/BiomeSelector";
 import HexGrid2D from "./configurator/HexGrid2D";
 import Joystick from "./configurator/Joystick";
 import SettingsPlanet from "./configurator/SettingsPlanet";
+import GradientButton from "./ui/GradientButton";
 
 // Nombre total de tuiles sur la planète
 const TOTAL_TILES = getDefaultHexasphereData().tileCount;
@@ -19,13 +22,17 @@ interface GameMobileProps {
 }
 
 export default function GameMobile({ roomName }: GameMobileProps) {
+  const router = useRouter();
   const [selectedBiome, setSelectedBiome] = useState<Biome | undefined>(undefined);
   const [gridMaxWidth, setGridMaxWidth] = useState<number | undefined>(undefined);
   const [containerWidth, setContainerWidth] = useState<number>(0);
   const [settingsWidth, setSettingsWidth] = useState<number>(0);
   const [isFinishButtonPressed, setIsFinishButtonPressed] = useState(false);
+  const [initialGameDuration, setInitialGameDuration] = useState<number>(300);
 
   const finishButtonTranslateY = useSharedValue(0);
+  const gameFinishedBannerHeight = useSharedValue(0);
+  const gameFinishedBannerWidth = useSharedValue(7);
 
   const { timeRemaining, isTimerActive, isGameFinished, startGame: startTimer, resetTimer, formatTime } = useGameTimer();
 
@@ -49,12 +56,12 @@ export default function GameMobile({ roomName }: GameMobileProps) {
       Alert.alert("Placement non autorisé", message);
     },
     onGameStart: (startTimestamp: number, gameDuration: number) => {
+      setInitialGameDuration(gameDuration);
       startTimer(startTimestamp, gameDuration);
     },
   });
 
 
-  // Calculer l'index du joueur actuel pour déterminer son image de bordure
   const currentUserIndex = useMemo(() => {
     if (!clientId) return 0;
 
@@ -66,9 +73,12 @@ export default function GameMobile({ roomName }: GameMobileProps) {
     return ourIndex >= 0 ? ourIndex : 0;
   }, [users, clientId]);
 
-  // Obtenir l'image de bordure du joueur actuel
   const playerBorderImage = useMemo(() => {
     return getPlayerBorderImage(currentUserIndex);
+  }, [currentUserIndex]);
+
+  const playerEndgameImage = useMemo(() => {
+    return getPlayerEndgameImage(currentUserIndex);
   }, [currentUserIndex]);
 
 
@@ -115,6 +125,8 @@ export default function GameMobile({ roomName }: GameMobileProps) {
   const handleReplay = () => {
     resetPlanet();
     resetTimer();
+    setInitialGameDuration(300);
+    router.replace("/");
   };
 
   const handleFinishButtonPress = () => {
@@ -139,9 +151,8 @@ export default function GameMobile({ roomName }: GameMobileProps) {
 
   const handleJoystickMove = (angle: number, distance: number) => {
     const angleRad = angle * (Math.PI / 180);
-    // Décomposer en composantes X (tilt vertical) et Y (rotation horizontale)
-    const velocityX = Math.sin(angleRad) * distance; // Haut/Bas -> tilt
-    const velocityY = Math.cos(angleRad) * distance; // Gauche/Droite -> rotation
+    const velocityX = Math.sin(angleRad) * distance;
+    const velocityY = Math.cos(angleRad) * distance;
     sendPlanetRotation(velocityX, velocityY);
   };
 
@@ -149,42 +160,63 @@ export default function GameMobile({ roomName }: GameMobileProps) {
   useEffect(() => {
     if (containerWidth > 0 && settingsWidth > 0) {
       const gap = 12;
-      const paddingHorizontal = 15 * 2; // padding left + right
+      const paddingHorizontal = 15 * 2;
       const availableWidth = containerWidth - settingsWidth - gap - paddingHorizontal;
       setGridMaxWidth(Math.max(0, availableWidth));
     }
   }, [containerWidth, settingsWidth]);
 
-  // Animation du bouton terminer
+  // Animation du bouton terminer (press)
   useEffect(() => {
     finishButtonTranslateY.value = withTiming(isFinishButtonPressed ? 2 : 0, { duration: 100 });
   }, [isFinishButtonPressed]);
+
+  useEffect(() => {
+    if (isGameFinished) {
+      gameFinishedBannerHeight.value = withTiming(60, {
+        duration: 400,
+        easing: Easing.out(Easing.cubic),
+      }, () => {
+        gameFinishedBannerWidth.value = withTiming(240, {
+          duration: 300,
+          easing: Easing.out(Easing.cubic),
+        });
+      });
+    } else {
+      gameFinishedBannerHeight.value = 0;
+      gameFinishedBannerWidth.value = 7;
+    }
+  }, [isGameFinished]);
 
   const finishButtonAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: finishButtonTranslateY.value }],
   }));
 
+  const gameFinishedBannerAnimatedStyle = useAnimatedStyle(() => ({
+    height: gameFinishedBannerHeight.value,
+    width: gameFinishedBannerWidth.value,
+  }));
+
   return (
     <View style={styles.container}>
-
-      {isGameFinished && (
-        <View style={styles.gameFinishedBanner}>
-          <Text style={styles.gameFinishedText}>⏱️ Temps écoulé ! Placement de biomes désactivé</Text>
-          <TouchableOpacity
-            style={styles.replayButton}
-            onPress={handleReplay}
-          >
-            <Text style={styles.replayButtonText}>🔄 Rejouer</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
       <View style={styles.gameZoneContainer}>
         <ImageBackground
           source={playerBorderImage}
           style={styles.gameZone}
           resizeMode="stretch"
         >
+          {isGameFinished && (
+            <Animated.View style={[styles.gameFinishedBanner, gameFinishedBannerAnimatedStyle]}>
+              <Text style={styles.gameFinishedText}>Fin de la partie</Text>
+            </Animated.View>
+          )}
+          {isGameFinished && (
+            <Image
+              source={playerEndgameImage}
+              style={styles.endgameImage}
+              resizeMode="contain"
+            />
+          )}
           {/* Timer */}
           <View style={[styles.timerContainer, { zIndex: 1, position: 'relative' }]}>
             {!isTimerActive && !isGameFinished && (
@@ -199,28 +231,38 @@ export default function GameMobile({ roomName }: GameMobileProps) {
               <>
                 <Text style={styles.timerText}>{formatTime(timeRemaining)}</Text>
                 <View style={styles.progressBarContainer}>
-                  <View style={[styles.progressBarFill, { width: `${((300 - timeRemaining) / 300) * 100}%` }]} />
+                  <LinearGradient
+                    colors={['#e74c3c', '#9b59b6', '#3498db']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[styles.progressBarFill, { width: `${(timeRemaining / initialGameDuration) * 100}%` }]}
+                  />
                 </View>
               </>
             )}
             {isGameFinished && (
               <>
-                <Text style={styles.timerFinishedText}>Temps écoulé !</Text>
+                <Text style={styles.timerText}>00:00</Text>
                 <View style={styles.progressBarContainer}>
-                  <View style={[styles.progressBarFill, { width: '100%' }]} />
+                  <LinearGradient
+                    colors={['#e74c3c', '#9b59b6', '#3498db']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[styles.progressBarFill, { width: '0%' }]}
+                  />
                 </View>
               </>
             )}
           </View>
 
           {/* Zone assignée - Afficher uniquement si le jeu est démarré */}
-          {assignedTiles !== null && isTimerActive && (
+          {/* {assignedTiles !== null && isTimerActive && (
             <View style={styles.assignmentBanner}>
               <Text style={styles.assignmentText}>
                 🎯 {assignedTiles.length} tuiles ({totalUsers} joueurs)
               </Text>
             </View>
-          )}
+          )} */}
 
           {/* Grille d'hexagones et paramètres du biome */}
           <View
@@ -245,12 +287,12 @@ export default function GameMobile({ roomName }: GameMobileProps) {
 
       <View style={styles.bottomContainer}>
         <View style={styles.bottomContainerInner}>
-          <View style={styles.connectionStatus}>
+          {/* <View style={styles.connectionStatus}>
             <View style={[styles.statusDot, { backgroundColor: isConnected ? '#22c55e' : '#ef4444' }]} />
             <Text style={styles.statusText}>
               {isConnected ? 'Connecté au serveur' : 'Déconnecté'}
             </Text>
-          </View>
+          </View> */}
 
           <View style={styles.dotsContainer}>
             <Image
@@ -266,38 +308,43 @@ export default function GameMobile({ roomName }: GameMobileProps) {
           </View>
 
           <View style={styles.controlsContainer}>
-            <BiomeSelector
-              selectedBiome={selectedBiome}
-              onBiomeSelect={handleBiomeSelect}
-            />
-
-            <View style={styles.actionRow}>
-              <View style={styles.buttonContainer}>
-                <View style={styles.finishButtonShadow} pointerEvents="none" />
-                <TouchableOpacity
-                  style={styles.finishButton}
-                  onPressIn={handleFinishButtonPress}
-                  onPress={handleFinishButtonPress}
-                  onPressOut={handleFinishButtonRelease}
-                >
-                  <Animated.View style={[styles.finishButtonInner, finishButtonAnimatedStyle]}>
-
-                  </Animated.View>
-                </TouchableOpacity>
-                <Text style={styles.finishButtonText}>terminer</Text>
+            {isGameFinished ? (
+              <View style={styles.replayButtonContainer}>
+                <GradientButton
+                  text="Rejouer"
+                  onPress={handleReplay}
+                />
               </View>
+            ) : (
+              <>
+                <BiomeSelector
+                  selectedBiome={selectedBiome}
+                  onBiomeSelect={handleBiomeSelect}
+                />
 
-              <Joystick onMove={handleJoystickMove} />
-            </View>
+                <View style={styles.actionRow}>
+                  <View style={styles.buttonContainer}>
+                    <View style={styles.finishButtonShadow} pointerEvents="none" />
+                    <TouchableOpacity
+                      style={styles.finishButton}
+                      onPressIn={handleFinishButtonPress}
+                      onPress={handleFinishButtonPress}
+                      onPressOut={handleFinishButtonRelease}
+                    >
+                      <Animated.View style={[styles.finishButtonInner, finishButtonAnimatedStyle]}>
+                        
+                      </Animated.View>
+                    </TouchableOpacity>
+                    <Text style={styles.finishButtonText}>terminer</Text>
+                  </View>
+
+                  <Joystick onMove={handleJoystickMove} />
+                </View>
+              </>
+            )}
           </View>
         </View>
       </View>
-
-      {allTilesUsed && (
-        <TouchableOpacity onPress={resetPlanet}>
-          <Text>🔄 Réinitialiser la planète</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
@@ -376,8 +423,10 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     alignItems: "center",
-    marginBottom: 10,
+    marginTop: 30,
     position: "relative",
+    overflow: "hidden",
+    alignSelf: "center",
   },
   finishButtonShadow: {
     position: "absolute",
@@ -449,18 +498,36 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   gameFinishedBanner: {
-    backgroundColor: "#fee2e2",
-    borderColor: "#ef4444",
-    borderWidth: 2,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 15,
+    position: "absolute",
+    top: 200,
+    left: "50%",
+    transform: [{ translateX: "-50%" }],
+    backgroundColor: "#5F80A8",
+    borderColor: "#A7CCFF",
+    borderWidth: 1,
+    borderRadius: 7,
+    paddingVertical: 19,
+    paddingHorizontal: 16,
     alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+    overflow: "hidden",
   },
   gameFinishedText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#ef4444",
+    fontFamily: "Omnium-Bold",
+    fontSize: 20,
+    color: "#fff",
+    textAlign: "center",
+  },
+  endgameImage: {
+    position: "absolute",
+    top: 15,
+    left: "50%",
+    transform: [{ translateX: "-50%" }],
+    width: "100%",
+    height: "100%",
+    zIndex: 5,
+    overflow: "hidden",
   },
   assignmentBanner: {
     position: "absolute",
@@ -519,16 +586,15 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     width: "100%",
-    height: 20,
-    backgroundColor: "#ffffff",
-    borderWidth: 2,
+    height: 15,
+    backgroundColor: "#0C0C0C",
+    borderWidth: 1,
     borderColor: "#ffffff",
-    borderRadius: 4,
+    borderRadius: 2,
     overflow: "hidden",
   },
   progressBarFill: {
     height: "100%",
-    backgroundColor: "#000000",
     borderRadius: 2,
   },
   gridAndSettingsContainer: {
@@ -539,6 +605,12 @@ const styles = StyleSheet.create({
     gap: 12,
     width: "100%",
     paddingBottom: 10,
+  },
+  replayButtonContainer: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 20,
   },
 });
 

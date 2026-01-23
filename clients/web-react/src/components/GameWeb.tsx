@@ -14,7 +14,6 @@ export default function GameWeb({ roomName }: GameWebProps) {
   const [showEndPopup, setShowEndPopup] = useState(false);
   const { timeRemaining, isTimerActive, isGameFinished, startGame: startTimer, resetTimer, finishGame, formatTime } = useGameTimer();
 
-  // Ref pour stocker le handler de rotation de ThreeScene
   const planetRotationHandlerRef = useRef<((velocityX: number, velocityY: number) => void) | null>(null);
 
   const handlePlanetRotation = useCallback((velocityX: number, velocityY: number) => {
@@ -34,6 +33,8 @@ export default function GameWeb({ roomName }: GameWebProps) {
     playerZones,
     totalUsers,
     resetPlanet,
+    readyPlayers,
+    allPlayersReady,
   } = usePlanetSync({
     room: roomName,
     canSendUpdate: () => isTimerActive && !isGameFinished,
@@ -192,9 +193,13 @@ export default function GameWeb({ roomName }: GameWebProps) {
           <button
             className="game-web-action-button"
             onClick={handleStartGame}
-            disabled={!roleReceived || !isConnected}
+            disabled={!roleReceived || !isConnected || !allPlayersReady}
           >
-            {roleReceived ? "DÉMARRER LA TERRAFORMATION" : "EN ATTENTE..."}
+            {!roleReceived || !isConnected 
+              ? "EN ATTENTE..." 
+              : !allPlayersReady 
+                ? `EN ATTENTE DE ${totalUsers - readyPlayers.length} JOUEUR(S)...`
+                : "DÉMARRER LA TERRAFORMATION"}
           </button>
         )}
         {(isTimerActive || isGameFinished) && (

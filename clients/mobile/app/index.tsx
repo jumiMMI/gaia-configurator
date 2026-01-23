@@ -15,7 +15,7 @@ export default function Home() {
   const [permission, requestPermission] = useCameraPermissions();
   const [hasScanned, setHasScanned] = useState(false);
 
-  const { isConnected, totalUsers } = usePlanetSync({
+  const { isConnected, totalUsers, sendReady } = usePlanetSync({
     room: hasScanned ? roomName : "",
     canSendUpdate: () => false,
     onGameStart: (startTimestamp: number, gameDuration: number) => {
@@ -113,10 +113,7 @@ export default function Home() {
 
   const handleReady = () => {
     if (hasScanned && isConnected) {
-      router.replace({
-        pathname: "/game",
-        params: { roomName },
-      } as any);
+      sendReady();
     }
   };
 
